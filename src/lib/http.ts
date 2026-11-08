@@ -25,8 +25,9 @@ function errorResponse(e: unknown) {
     if (e.code === "P2002") return NextResponse.json({ error: { code: "DUPLICADO", message: "Já existe um registro com esses dados." } }, { status: 409 });
     if (e.code === "P2025") return NextResponse.json({ error: { code: "NAO_ENCONTRADO", message: "Registro não encontrado." } }, { status: 404 });
   }
-  console.error("[api] erro inesperado:", e);
-  return NextResponse.json({ error: { code: "ERRO_INTERNO", message: "Erro interno. Tente novamente ou contate o suporte." } }, { status: 500 });
+  const msg = e instanceof Error ? `${e.constructor.name}: ${e.message}` : String(e);
+  console.error("[api] erro inesperado:", msg, e instanceof Error ? e.stack : "");
+  return NextResponse.json({ error: { code: "ERRO_INTERNO", message: "Erro interno. Tente novamente ou contate o suporte.", details: process.env.NODE_ENV !== "production" ? msg : undefined } }, { status: 500 });
 }
 
 /** Wrapper padrão de Route Handlers: sessão → CSRF → rate limit → permissão → validação Zod → handler. */

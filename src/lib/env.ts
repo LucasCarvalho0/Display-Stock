@@ -6,5 +6,4 @@ const schema = z.object({
   SMTP_URL: z.string().optional(),
   SMTP_FROM: z.string().optional(),
 });
-let cached: z.infer<typeof schema> | null = null;
-export const env = () => (cached ??= schema.parse(process.env));
+export const env = () => schema.parse(process.env);
