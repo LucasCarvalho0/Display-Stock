@@ -103,7 +103,7 @@ export default function EstoquePage() {
           <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-brand">
             <span>Gestão Física &amp; Sistêmica</span>
             <span className="text-slate-300">/</span>
-            <span className="font-mono text-slate-500">Posto Cockpit Nissan</span>
+            <span className="font-mono text-slate-500">Posto Cockpit Sesé</span>
           </div>
           <h1 className="text-xl md:text-2xl font-bold text-navy-900 tracking-tight mt-0.5">
             Controle de Estoque de Displays &amp; Multimídia

@@ -28,6 +28,7 @@ import {
 } from "lucide-react";
 import { ToastProvider } from "./ui";
 import { api, fmtDT, useFetch } from "@/lib/api";
+import KeyboardShortcuts from "./KeyboardShortcuts";
 
 type U = { name: string; email: string; role: string; permissions: string[] };
 
@@ -101,7 +102,7 @@ export default function AppShell({ user, children }: { user: U; children: React.
               {!collapsed && (
                 <div className="leading-tight">
                   <div className="text-sm font-bold text-white tracking-tight">DISPLAY STOCK</div>
-                  <div className="text-[10px] text-sky-400 font-medium">NISSAN LOGISTICS</div>
+                  <div className="text-[10px] text-sky-400 font-medium">SESÉ LOGISTICS</div>
                 </div>
               )}
             </div>
@@ -180,7 +181,7 @@ export default function AppShell({ user, children }: { user: U; children: React.
           {!collapsed && (
             <div className="p-3 bg-navy-950 border-t border-white/5 m-2 rounded-xl text-xs space-y-1 text-slate-400 font-mono">
               <div className="flex items-center justify-between text-[11px] text-slate-300">
-                <span>NISSAN ERP GATEWAY</span>
+                <span>SESÉ ERP GATEWAY</span>
                 <span className="text-sky-400 font-semibold">v2.4.0</span>
               </div>
               <div className="flex items-center gap-1.5 text-[10px] text-emerald-400">

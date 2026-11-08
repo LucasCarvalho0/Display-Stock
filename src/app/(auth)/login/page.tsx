@@ -84,7 +84,7 @@ export default function LoginPage() {
                     DISPLAY STOCK CONTROL
                   </span>
                   <span className="bg-blue-100 text-brand px-2 py-0.5 rounded text-xs font-semibold">
-                    NISSAN
+                    SESÉ
                   </span>
                 </div>
                 <p className="text-xs uppercase tracking-wider text-slate-500 font-medium">
@@ -150,7 +150,7 @@ export default function LoginPage() {
                 <label className="text-xs font-medium text-slate-700" htmlFor="email">
                   E-mail Corporativo Autorizado
                 </label>
-                <span className="text-[11px] font-mono text-slate-400">SSO / LDAP NISSAN</span>
+                <span className="text-[11px] font-mono text-slate-400">SSO / LDAP SESÉ</span>
               </div>
               <div className="relative">
                 <Mail className="absolute left-3.5 top-3 h-4 w-4 text-slate-400" />
@@ -265,16 +265,16 @@ export default function LoginPage() {
               <div className="flex items-center justify-between text-xs text-slate-300 mb-1">
                 <span className="flex items-center gap-1.5">
                   <Server className="h-3.5 w-3.5 text-emerald-400" />
-                  Banco de Dados
+                  Servidor Operacional
                 </span>
                 <span className="text-emerald-400 font-mono font-semibold">ONLINE</span>
               </div>
-              <p className="text-sm font-semibold text-white">Prisma Cloud &amp; Transações ACID</p>
+              <p className="text-sm font-semibold text-white">Gestão Sesé &amp; Sincronização Ativa</p>
             </div>
 
             <div className="p-4 rounded-xl bg-white/5 border border-white/10">
               <div className="flex items-center justify-between text-xs text-slate-300 mb-1">
-                <span>Rastreabilidade Nissan</span>
+                <span>Rastreabilidade Sesé</span>
                 <span className="text-sky-400 font-mono font-semibold">ATIVO</span>
               </div>
               <p className="text-sm font-semibold text-white">
@@ -307,7 +307,7 @@ export default function LoginPage() {
 
         <div className="pt-6 border-t border-white/10 text-xs text-slate-400">
           <p className="text-[11px] leading-relaxed">
-            Operação Nissan Display Stock Control v1.0.0. Acesso restrito a colaboradores
+            Operação Sesé Display Stock Control v1.0.0. Acesso restrito a colaboradores
             autorizados.
           </p>
         </div>

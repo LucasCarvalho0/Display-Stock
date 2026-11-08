@@ -164,7 +164,7 @@ export default function Dashboard() {
             </div>
           </div>
           <div className="mt-3 pt-2 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
-            <span>Família Nissan Display</span>
+            <span>Família Sesé Display</span>
             <span className="font-mono font-medium text-slate-700">Ativos</span>
           </div>
         </div>
