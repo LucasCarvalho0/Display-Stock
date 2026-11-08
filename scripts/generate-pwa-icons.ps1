@@ -1,4 +1,4 @@
-Add-Type -AssemblyName System.Drawing
+﻿Add-Type -AssemblyName System.Drawing
 
 function New-PwaIcon {
     param(
@@ -12,7 +12,6 @@ function New-PwaIcon {
     $g.SmoothingMode = [System.Drawing.Drawing2D.SmoothingMode]::AntiAlias
     $g.InterpolationMode = [System.Drawing.Drawing2D.InterpolationMode]::HighQualityBicubic
     $g.PixelOffsetMode = [System.Drawing.Drawing2D.PixelOffsetMode]::HighQuality
-    $g.TextRenderingHint = [System.Drawing.Text.TextRenderingHint]::ClearTypeGridFit
 
     # Fundo Oficial Azul Sesé (#1E3F90)
     $seseBlue = [System.Drawing.Color]::FromArgb(255, 30, 63, 144)
@@ -20,69 +19,55 @@ function New-PwaIcon {
     $g.FillRectangle($bgBrush, 0, 0, $Size, $Size)
     $bgBrush.Dispose()
 
-    # Logo do Projeto: LOGO.jpg (Leão Sesé + tipografia oficial)
     $logoFile = if (Test-Path "public\logo.jpg") { "public\logo.jpg" } else { "LOGO.jpg" }
-    $logoPath = Resolve-Path $logoFile
+    $logo = [System.Drawing.Image]::FromFile((Resolve-Path $logoFile).Path)
 
-    if (Test-Path $logoPath) {
-        $logo = [System.Drawing.Image]::FromFile($logoPath)
-
-        if ($IsMaskable) {
-            # Ícone Maskable PWA: área segura central de ~65% para garantir que não haja cortes em círculos/squarcles do Android
-            $logoW = [int]($Size * 0.58)
-            $logoH = [int]($Size * 0.58)
-            $logoX = [int](($Size - $logoW) / 2)
-            $logoY = [int]($Size * 0.12)
-            $g.DrawImage($logo, $logoX, $logoY, $logoW, $logoH)
-
-            # Tipografia: DISPLAY STOCK
-            $fontSize = [float][Math]::Max(8.0, ($Size * 0.075))
-            $font = [System.Drawing.Font]::new("Arial", $fontSize, [System.Drawing.FontStyle]::Bold, [System.Drawing.GraphicsUnit]::Pixel)
-            $textBrush = [System.Drawing.SolidBrush]::new([System.Drawing.Color]::White)
-            $format = [System.Drawing.StringFormat]::new()
-            $format.Alignment = [System.Drawing.StringAlignment]::Center
-            $format.LineAlignment = [System.Drawing.StringAlignment]::Center
-            $textRect = [System.Drawing.RectangleF]::new(0.0, [float]($Size * 0.72), [float]$Size, [float]($Size * 0.12))
-            $g.DrawString("DISPLAY STOCK", $font, $textBrush, $textRect, $format)
-
-            $font.Dispose()
-            $textBrush.Dispose()
-            $format.Dispose()
-        } else {
-            # Ícone PWA Padrão: Logo elegante com texto integrado
-            $logoW = [int]($Size * 0.65)
-            $logoH = [int]($Size * 0.65)
-            $logoX = [int](($Size - $logoW) / 2)
-            $logoY = [int]($Size * 0.10)
-            $g.DrawImage($logo, $logoX, $logoY, $logoW, $logoH)
-
-            # Tipografia: DISPLAY STOCK
-            $fontSize = [float][Math]::Max(9.0, ($Size * 0.082))
-            $font = [System.Drawing.Font]::new("Arial", $fontSize, [System.Drawing.FontStyle]::Bold, [System.Drawing.GraphicsUnit]::Pixel)
-            $textBrush = [System.Drawing.SolidBrush]::new([System.Drawing.Color]::White)
-            $format = [System.Drawing.StringFormat]::new()
-            $format.Alignment = [System.Drawing.StringAlignment]::Center
-            $format.LineAlignment = [System.Drawing.StringAlignment]::Center
-            $textRect = [System.Drawing.RectangleF]::new(0.0, [float]($Size * 0.76), [float]$Size, [float]($Size * 0.14))
-            $g.DrawString("DISPLAY STOCK", $font, $textBrush, $textRect, $format)
-
-            $font.Dispose()
-            $textBrush.Dispose()
-            $format.Dispose()
-        }
-
-        $logo.Dispose()
+    if ($IsMaskable) {
+        # Área segura do Android (~78% do centro para evitar cortes em ícones redondos)
+        $w = [int]($Size * 0.78)
+        $h = [int]($Size * 0.78)
+        $x = [int](($Size - $w) / 2)
+        $y = [int](($Size - $h) / 2)
+        $g.DrawImage($logo, $x, $y, $w, $h)
+    } else {
+        # Ícone direto de alta fidelidade preenchendo o quadrado com a logo oficial
+        $g.DrawImage($logo, 0, 0, $Size, $Size)
     }
 
-    # Salvar arquivo em formato PNG de alta fidelidade
+    $logo.Dispose()
+
     $bmp.Save($OutputPath, [System.Drawing.Imaging.ImageFormat]::Png)
     $g.Dispose()
     $bmp.Dispose()
-    Write-Host "Ícone PWA gerado com a logo oficial: $OutputPath ($Size x $Size)"
+    Write-Host "Ícone PWA gerado com sucesso: $OutputPath ($Size x $Size)"
 }
 
-# Gerar ícones PWA e Touch Icon
+# Gerar todos os ícones PWA diretamente com a LOGO.jpg
 New-PwaIcon -Size 192 -OutputPath "public\icon-192.png"
 New-PwaIcon -Size 512 -OutputPath "public\icon-512.png"
 New-PwaIcon -Size 512 -OutputPath "public\icon-maskable-512.png" -IsMaskable $true
 New-PwaIcon -Size 180 -OutputPath "public\apple-touch-icon.png"
+
+# Gerar Favicons para navegador (32x32 e 16x16)
+New-PwaIcon -Size 32 -OutputPath "public\favicon-32x32.png"
+New-PwaIcon -Size 16 -OutputPath "public\favicon-16x16.png"
+Copy-Item "public\favicon-32x32.png" "src\app\icon.png" -Force
+
+# Gerar favicon.ico legítimo contendo a logo
+$bmp32 = [System.Drawing.Bitmap]::new(32, 32)
+$g32 = [System.Drawing.Graphics]::FromImage($bmp32)
+$g32.InterpolationMode = [System.Drawing.Drawing2D.InterpolationMode]::HighQualityBicubic
+$logo = [System.Drawing.Image]::FromFile((Resolve-Path "public\logo.jpg").Path)
+$g32.DrawImage($logo, 0, 0, 32, 32)
+$hIcon = $bmp32.GetHicon()
+$icon = [System.Drawing.Icon]::FromHandle($hIcon)
+$icoPath = Join-Path (Get-Location) "public\favicon.ico"
+$fs = [System.IO.File]::Create($icoPath)
+$icon.Save($fs)
+$fs.Close()
+Copy-Item $icoPath "src\app\favicon.ico" -Force
+$g32.Dispose()
+$bmp32.Dispose()
+$logo.Dispose()
+
+Write-Host "Todos os ícones PWA e favicons foram gerados diretamente a partir de LOGO.jpg!"

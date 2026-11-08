@@ -9,3 +9,4 @@ export const POST = route({ perm: "settings.manage" }, async ({ user, ip }) => {
   const result = await closeFiscalYear(user, ip);
   return result;
 });
+

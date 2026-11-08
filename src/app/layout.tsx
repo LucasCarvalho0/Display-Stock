@@ -3,7 +3,7 @@ import type { Metadata, Viewport } from "next";
 import PwaRegister from "@/components/PwaRegister";
 
 export const viewport: Viewport = {
-  themeColor: "#0A192F",
+  themeColor: "#1E3F90",
   width: "device-width",
   initialScale: 1,
   maximumScale: 5,
@@ -46,8 +46,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           rel="stylesheet"
         />
         <link rel="manifest" href="/manifest.json" />
-        <link rel="icon" href="/favicon.ico" sizes="any" />
         <link rel="icon" href="/logo.jpg" type="image/jpeg" />
+        <link rel="icon" href="/favicon.ico" sizes="any" />
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />

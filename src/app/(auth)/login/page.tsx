@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
@@ -180,12 +179,9 @@ export default function LoginPage() {
                 <label className="text-xs font-medium text-slate-700" htmlFor="password">
                   Senha de Acesso Terminal
                 </label>
-                <Link
-                  href="/esqueci-senha"
-                  className="text-xs text-brand hover:underline font-medium"
-                >
-                  Esqueceu a senha?
-                </Link>
+                <span className="text-[11px] font-medium text-slate-400">
+                  Acesso gerenciado pelo TI
+                </span>
               </div>
               <div className="relative">
                 <Lock className="absolute left-3.5 top-3 h-4 w-4 text-slate-400" />
