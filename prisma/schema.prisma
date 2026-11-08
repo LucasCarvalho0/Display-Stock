@@ -1,0 +1,376 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Classification {
+  NORMAL
+  NG
+}
+
+enum MovementType {
+  ENTRADA
+  SAIDA
+  AJUSTE_POSITIVO
+  AJUSTE_NEGATIVO
+}
+
+enum MovementStatus {
+  ATIVA
+  ESTORNADA
+}
+
+enum Shift {
+  MANHA
+  NOITE
+}
+
+enum InventoryStatus {
+  INICIADO
+  CONTAGEM_MANHA
+  CONTAGEM_NOITE
+  COMPARADO
+  JUSTIFICATIVAS
+  AGUARDANDO_APROVACAO
+  FECHADO
+}
+
+enum DiscrepancyStatus {
+  ABERTA
+  JUSTIFICADA
+  APROVADA
+  REJEITADA
+}
+
+enum DiscrepancyReason {
+  SAIDA_NAO_REGISTRADA
+  ENTRADA_NAO_REGISTRADA
+  ERRO_LANCAMENTO
+  DIVERGENCIA_FISICA
+  PECA_DANIFICADA
+  PECA_LOCALIZADA
+  OUTROS
+}
+
+enum ApprovalDecision {
+  APROVADO
+  REJEITADO
+}
+
+enum ImportKind {
+  PRODUTOS
+  MOVIMENTACOES
+}
+
+enum ImportStatus {
+  PREVIA
+  CONFIRMADA
+  CANCELADA
+}
+
+model Role {
+  id          String           @id @default(cuid())
+  name        String           @unique
+  description String?
+  users       User[]
+  permissions RolePermission[]
+}
+
+model Permission {
+  id          String           @id @default(cuid())
+  key         String           @unique
+  description String
+  roles       RolePermission[]
+}
+
+model RolePermission {
+  roleId       String
+  permissionId String
+  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@id([roleId, permissionId])
+}
+
+model User {
+  id                 String                   @id @default(cuid())
+  name               String
+  email              String                   @unique
+  passwordHash       String
+  mustChangePassword Boolean                  @default(true)
+  active             Boolean                  @default(true)
+  failedLogins       Int                      @default(0)
+  lockedUntil        DateTime?
+  roleId             String
+  role               Role                     @relation(fields: [roleId], references: [id])
+  createdAt          DateTime                 @default(now())
+  updatedAt          DateTime                 @updatedAt
+  sessions           Session[]
+  movements          Movement[]               @relation("MovementCreator")
+  revisions          MovementRevision[]
+  auditLogs          AuditLog[]
+  resetTokens        PasswordResetToken[]
+  inventoriesOwned   InventorySession[]
+  counts             InventoryCount[]
+  justifications     InventoryJustification[]
+  approvals          InventoryApproval[]
+  adjustments        StockAdjustment[]
+  exports            ReportExport[]
+  imports            ImportBatch[]
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  ip        String?
+  userAgent String?
+
+  @@index([userId])
+}
+
+model PasswordResetToken {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+}
+
+model Client {
+  id       String    @id @default(cuid())
+  name     String    @unique
+  active   Boolean   @default(true)
+  products Product[]
+}
+
+model Product {
+  id             String                 @id @default(cuid())
+  code           String                 @unique
+  baseCode       String
+  description    String
+  model          String
+  clientId       String
+  client         Client                 @relation(fields: [clientId], references: [id])
+  classification Classification         @default(NORMAL)
+  minStock       Int                    @default(1)
+  active         Boolean                @default(true)
+  initialBalance Int                    @default(0)
+  sortOrder      Int                    @default(9999)
+  sortNissan     Int?
+  sortGeral      Int?
+  createdAt      DateTime               @default(now())
+  updatedAt      DateTime               @updatedAt
+  balance        StockBalance?
+  movements      Movement[]
+  counts         InventoryCount[]
+  discrepancies  InventoryDiscrepancy[]
+
+  @@index([clientId])
+  @@index([classification, active])
+  @@index([baseCode])
+}
+
+model StockBalance {
+  productId String   @id
+  product   Product  @relation(fields: [productId], references: [id])
+  quantity  Int      @default(0)
+  version   Int      @default(0)
+  updatedAt DateTime @updatedAt
+}
+
+model Setting {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt
+}
+
+model Movement {
+  id            String             @id @default(cuid())
+  seq           Int                @unique @default(autoincrement())
+  number        String             @unique
+  type          MovementType
+  status        MovementStatus     @default(ATIVA)
+  productId     String
+  product       Product            @relation(fields: [productId], references: [id])
+  quantity      Int
+  note          String?
+  source        String             @default("MANUAL")
+  occurredAt    DateTime           @default(now())
+  createdById   String
+  createdBy     User               @relation("MovementCreator", fields: [createdById], references: [id])
+  importBatchId String?
+  importBatch   ImportBatch?       @relation(fields: [importBatchId], references: [id])
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+  revisions     MovementRevision[]
+  adjustment    StockAdjustment?
+
+  @@index([productId, occurredAt])
+  @@index([occurredAt])
+  @@index([createdById])
+  @@index([type, occurredAt])
+}
+
+model MovementRevision {
+  id            String   @id @default(cuid())
+  movementId    String
+  movement      Movement @relation(fields: [movementId], references: [id])
+  revisionNo    Int
+  previous      Json
+  next          Json
+  justification String
+  revisedById   String
+  revisedBy     User     @relation(fields: [revisedById], references: [id])
+  revisedAt     DateTime @default(now())
+
+  @@unique([movementId, revisionNo])
+}
+
+model InventorySession {
+  id             String                 @id @default(cuid())
+  code           String                 @unique
+  referenceDate  DateTime               @db.Date
+  startShift     Shift
+  classification Classification         @default(NORMAL)
+  status         InventoryStatus        @default(INICIADO)
+  responsibleId  String
+  responsible    User                   @relation(fields: [responsibleId], references: [id])
+  startedAt      DateTime               @default(now())
+  closedAt       DateTime?
+  closedById     String?
+  counts         InventoryCount[]
+  discrepancies  InventoryDiscrepancy[]
+  approvals      InventoryApproval[]
+  adjustments    StockAdjustment[]
+
+  @@index([referenceDate])
+  @@index([status])
+}
+
+model InventoryCount {
+  id               String           @id @default(cuid())
+  sessionId        String
+  session          InventorySession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  productId        String
+  product          Product          @relation(fields: [productId], references: [id])
+  shift            Shift
+  position         Int
+  referenceBalance Int
+  referenceAt      DateTime
+  physicalQty      Int?
+  countedAt        DateTime?
+  countedById      String?
+  countedBy        User?            @relation(fields: [countedById], references: [id])
+
+  @@unique([sessionId, productId, shift])
+  @@index([sessionId, shift, position])
+}
+
+model InventoryDiscrepancy {
+  id             String                   @id @default(cuid())
+  sessionId      String
+  session        InventorySession         @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  productId      String
+  product        Product                  @relation(fields: [productId], references: [id])
+  shift          Shift
+  expectedQty    Int
+  physicalQty    Int
+  difference     Int
+  status         DiscrepancyStatus        @default(ABERTA)
+  detectedAt     DateTime                 @default(now())
+  justifications InventoryJustification[]
+  approvals      InventoryApproval[]
+  adjustment     StockAdjustment?
+
+  @@unique([sessionId, productId, shift])
+}
+
+model InventoryJustification {
+  id            String               @id @default(cuid())
+  discrepancyId String
+  discrepancy   InventoryDiscrepancy @relation(fields: [discrepancyId], references: [id], onDelete: Cascade)
+  reason        DiscrepancyReason
+  text          String
+  userId        String
+  user          User                 @relation(fields: [userId], references: [id])
+  createdAt     DateTime             @default(now())
+}
+
+model InventoryApproval {
+  id            String                @id @default(cuid())
+  sessionId     String
+  session       InventorySession      @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  discrepancyId String?
+  discrepancy   InventoryDiscrepancy? @relation(fields: [discrepancyId], references: [id])
+  decision      ApprovalDecision
+  comment       String?
+  approverId    String
+  approver      User                  @relation(fields: [approverId], references: [id])
+  createdAt     DateTime              @default(now())
+}
+
+model StockAdjustment {
+  id             String                @id @default(cuid())
+  sessionId      String?
+  session        InventorySession?     @relation(fields: [sessionId], references: [id])
+  discrepancyId  String?               @unique
+  discrepancy    InventoryDiscrepancy? @relation(fields: [discrepancyId], references: [id])
+  movementId     String                @unique
+  movement       Movement              @relation(fields: [movementId], references: [id])
+  quantity       Int
+  justification  String
+  authorizedById String
+  authorizedBy   User                  @relation(fields: [authorizedById], references: [id])
+  createdAt      DateTime              @default(now())
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id])
+  action    String
+  entity    String
+  entityId  String?
+  before    Json?
+  after     Json?
+  ip        String?
+  createdAt DateTime @default(now())
+
+  @@index([entity, entityId])
+  @@index([createdAt])
+  @@index([userId])
+}
+
+model ReportExport {
+  id              String   @id @default(cuid())
+  report          String
+  format          String
+  referenceDate   DateTime @db.Date
+  inventoryClosed Boolean
+  userId          String
+  user            User     @relation(fields: [userId], references: [id])
+  createdAt       DateTime @default(now())
+}
+
+model ImportBatch {
+  id          String       @id @default(cuid())
+  kind        ImportKind
+  status      ImportStatus @default(PREVIA)
+  fileName    String
+  payload     Json
+  summary     Json
+  userId      String
+  user        User         @relation(fields: [userId], references: [id])
+  createdAt   DateTime     @default(now())
+  confirmedAt DateTime?
+  movements   Movement[]
+}

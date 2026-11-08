@@ -1,0 +1,71 @@
+{
+  "name": "DISPLAY STOCK — Controle de Estoque",
+  "short_name": "DISPLAY STOCK",
+  "description": "Sistema industrial de controle de estoque, inventário por turno e reporte da Operação Sesé",
+  "start_url": "/dashboard",
+  "id": "/dashboard",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#0A192F",
+  "theme_color": "#0A192F",
+  "lang": "pt-BR",
+  "categories": ["business", "productivity", "utilities"],
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Entrada de Peças",
+      "short_name": "Entrada",
+      "description": "Registrar entrada e recebimento de componentes",
+      "url": "/entrada",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Saída de Peças",
+      "short_name": "Saída",
+      "description": "Alocar peças para montagem no cockpit",
+      "url": "/saida",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Controle de Estoque",
+      "short_name": "Estoque",
+      "description": "Consultar saldos de peças e saldo NG",
+      "url": "/estoque",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Inventário de Turno",
+      "short_name": "Inventário",
+      "description": "Contagem física e reconciliação",
+      "url": "/inventario",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    }
+  ]
+}
+

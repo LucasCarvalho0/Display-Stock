@@ -1,0 +1,30 @@
+# Dependencies
+node_modules
+/.pnp
+.pnp.js
+
+# Next.js build output
+.next/
+out/
+build/
+dist/
+
+# Environment and secrets (CRITICAL: NEVER COMMIT TO GIT)
+.env
+.env*.local
+.env.production
+.env.development
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+*.log
+
+# Prisma and temporary files
+backups/*.sql.gz
+*.tsbuildinfo
+
+# OS
+.DS_Store
+Thumbs.db
