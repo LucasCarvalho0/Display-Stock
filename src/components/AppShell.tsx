@@ -186,7 +186,7 @@ export default function AppShell({ user, children }: { user: U; children: React.
               </div>
               <div className="flex items-center gap-1.5 text-[10px] text-emerald-400">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-                <span>Banco de Dados Online</span>
+                <span>Operação Sesé Conectada</span>
               </div>
             </div>
           )}
