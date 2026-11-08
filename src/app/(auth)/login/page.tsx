@@ -100,7 +100,7 @@ export default function LoginPage() {
 
             <div className="flex items-center gap-2 px-3 py-1 bg-slate-50 border border-slate-200 rounded-full text-xs font-medium text-slate-700">
               <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-              <span>GATEWAY RESENDE #04 ON-LINE</span>
+              <span>OPERAÇÃO SESÉ ON-LINE</span>
             </div>
           </div>
 
