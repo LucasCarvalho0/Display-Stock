@@ -1,14 +1,16 @@
 // DISPLAY STOCK — Service Worker (PWA)
-const CACHE_NAME = 'display-stock-v2';
+const CACHE_NAME = 'display-stock-v3';
 const STATIC_ASSETS = [
   '/',
   '/manifest.json',
+  '/logo.jpg',
+  '/favicon.ico',
+  '/favicon-32x32.png',
   '/icon-192.png',
   '/icon-512.png',
+  '/icon-maskable-512.png',
   '/icon.svg',
   '/apple-touch-icon.png',
-  '/logo_0.jpeg',
-  '/logo_1.jpeg'
 ];
 
 // Instalação do Service Worker
