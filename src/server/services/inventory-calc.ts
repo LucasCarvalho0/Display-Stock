@@ -32,7 +32,7 @@ export function crossShift(a: { morningPhysical: number; morningCountedAt: Date;
 export const isJustificationValid = (text: string | undefined | null) => (text ?? "").trim().length >= 5;
 
 export type CloseCheck = {
-  counts: { shift: "MANHA" | "NOITE"; total: number; counted: number }[];
+  counts: { shift: "MANHA" | "NOITE" | "GERAL"; total: number; counted: number }[];
   discrepancies: { status: "ABERTA" | "JUSTIFICADA" | "APROVADA" | "REJEITADA" }[];
   hasSessionApproval: boolean; countingFinished: boolean;
 };

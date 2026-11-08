@@ -1,6 +1,6 @@
-import { MovementType, Prisma } from "@prisma/client";
+import { MovementType, Prisma, Shift } from "@prisma/client";
 import { prisma, Tx, transaction } from "@/lib/db";
-import { AppError, badRequest, conflict, notFound } from "@/lib/errors";
+import { AppError, badRequest, conflict, forbidden, notFound } from "@/lib/errors";
 import { audit } from "./audit.service";
 
 export const signedQty = (type: MovementType, qty: number) =>
@@ -21,6 +21,7 @@ const insufficient = (available: number) =>
 export type NewMovement = {
   productId: string; type: MovementType; quantity: number; note?: string | null;
   userId: string; occurredAt?: Date; source?: string; importBatchId?: string; ip?: string;
+  shift?: Shift;
 };
 
 /** Registra a movimentação, atualiza o saldo e a auditoria. Deve ser chamada dentro de uma transação. */
@@ -29,6 +30,17 @@ export async function applyMovement(tx: Tx, m: NewMovement) {
   const product = await tx.product.findUnique({ where: { id: m.productId } });
   if (!product) throw notFound("Produto não encontrado.");
   if (!product.active) throw badRequest("Produto inativo. Reative o cadastro para movimentar.");
+
+  let shiftToRecord: Shift = m.shift ?? "GERAL";
+  if (!m.shift) {
+    const user = await tx.user.findUnique({ where: { id: m.userId }, select: { shift: true } });
+    if (user?.shift && user.shift !== "GERAL") {
+      shiftToRecord = user.shift;
+    } else {
+      const hour = (m.occurredAt ?? new Date()).getHours();
+      shiftToRecord = hour >= 6 && hour < 16 ? "MANHA" : "NOITE";
+    }
+  }
 
   const current = await lockBalance(tx, m.productId);
   const next = current + signedQty(m.type, m.quantity);
@@ -39,7 +51,7 @@ export async function applyMovement(tx: Tx, m: NewMovement) {
   const mov = await tx.movement.create({ data: {
     seq, number: movementNumber(seq), type: m.type, productId: m.productId, quantity: m.quantity,
     note: m.note?.trim() || null, createdById: m.userId, occurredAt: m.occurredAt ?? new Date(),
-    source: m.source ?? "MANUAL", importBatchId: m.importBatchId,
+    source: m.source ?? "MANUAL", importBatchId: m.importBatchId, shift: shiftToRecord,
   } });
   await tx.stockBalance.update({ where: { productId: m.productId }, data: { quantity: next, version: { increment: 1 } } });
   await audit(tx, { userId: m.userId, action: "MOVIMENTACAO_CRIADA", entity: "Movement", entityId: mov.id, ip: m.ip,
@@ -60,6 +72,23 @@ export async function correctMovement(movementId: string, c: Correction, justifi
     await lockBalance(tx, found.productId);
     const mov = await tx.movement.findUniqueOrThrow({ where: { id: movementId } }); // releitura sob bloqueio
     if (mov.status === "ESTORNADA") throw conflict("JA_ESTORNADA", "Esta movimentação já foi estornada.");
+
+    // Regra de Espelhamento de Turnos: 1T não modifica o que 2T fez e vice-versa
+    const actor = await tx.user.findUnique({ where: { id: userId }, include: { role: true } });
+    if (actor && actor.role.name !== "Administrador" && actor.shift !== "GERAL") {
+      if (mov.shift !== actor.shift) {
+        const shiftMap: Record<string, string> = {
+          MANHA: "1º Turno (Manhã)",
+          NOITE: "2º Turno (Noite)",
+          GERAL: "Geral",
+        };
+        const movShiftName = shiftMap[mov.shift] || mov.shift;
+        const userShiftName = shiftMap[actor.shift] || actor.shift;
+        throw forbidden(
+          `Espelhamento de Turno (Apenas Leitura): Usuários do ${userShiftName} não possuem permissão para modificar lançamentos registrados pelo ${movShiftName}. Solicite a um operador do respectivo turno ou ao Administrador Geral.`
+        );
+      }
+    }
     if ((mov.type === "AJUSTE_POSITIVO" || mov.type === "AJUSTE_NEGATIVO") && (c.type || c.quantity !== undefined))
       throw badRequest("Ajustes de inventário não podem ser alterados; registre um novo ajuste autorizado.");
     if (mov.source === "AJUSTE_INVENTARIO" && c.void) throw badRequest("Ajustes de inventário não podem ser estornados.");

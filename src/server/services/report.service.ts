@@ -112,7 +112,12 @@ export async function exportXlsx(r: Awaited<ReturnType<typeof buildReport>>): Pr
   }
 
   // Inserção dos Logos originais (Sesé à esquerda, Nissan à direita)
-  const logo0Path = path.join(process.cwd(), "public/logo_0.jpeg");
+  const logo0Candidates = [
+    path.join(process.cwd(), "public/logo.jpg"),
+    path.join(process.cwd(), "LOGO.jpg"),
+    path.join(process.cwd(), "public/logo_0.jpeg"),
+  ];
+  const logo0Path = logo0Candidates.find((p) => fs.existsSync(p)) || logo0Candidates[2];
   const logo1Path = path.join(process.cwd(), "public/logo_1.jpeg");
 
   if (fs.existsSync(logo0Path)) {

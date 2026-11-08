@@ -30,7 +30,7 @@ import { ToastProvider } from "./ui";
 import { api, fmtDT, useFetch } from "@/lib/api";
 import KeyboardShortcuts from "./KeyboardShortcuts";
 
-type U = { name: string; email: string; role: string; permissions: string[] };
+type U = { name: string; email: string; role: string; shift?: "MANHA" | "NOITE" | "GERAL"; permissions: string[] };
 
 const LOGISTICS_NAV = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -96,8 +96,8 @@ export default function AppShell({ user, children }: { user: U; children: React.
           {/* Topo do Menu */}
           <div className="flex h-16 items-center justify-between border-b border-white/10 px-4">
             <div className="flex items-center gap-2.5 overflow-hidden">
-              <div className="w-8 h-8 rounded-lg bg-brand text-white flex items-center justify-center shrink-0">
-                <Boxes className="h-5 w-5" />
+              <div className="w-8 h-8 rounded-lg overflow-hidden bg-[#1E3F90] flex items-center justify-center shrink-0 border border-white/10 p-0.5 shadow-sm">
+                <img src="/logo.jpg" alt="Logo Sesé" className="w-full h-full object-contain" />
               </div>
               {!collapsed && (
                 <div className="leading-tight">
@@ -212,17 +212,22 @@ export default function AppShell({ user, children }: { user: U; children: React.
                 <Menu className="h-5 w-5" />
               </button>
 
-              <div>
-                <div className="flex items-center gap-2">
-                  <span className="font-bold text-sm md:text-base text-navy-900 tracking-tight">
-                    DISPLAY STOCK CONTROL
-                  </span>
-                  <span className="bg-slate-100 text-slate-700 font-mono text-[11px] font-bold px-1.5 py-0.5 rounded border border-slate-200">
-                    SESÉ OP
-                  </span>
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg overflow-hidden bg-[#1E3F90] hidden sm:flex items-center justify-center p-0.5 border border-slate-200 shadow-xs shrink-0">
+                  <img src="/logo.jpg" alt="Logo Sesé" className="w-full h-full object-contain" />
                 </div>
-                <div className="hidden sm:block text-xs text-slate-500">
-                  Gestão Serializada de Peças Multimídia &amp; Displays · Cockpit 04
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="font-bold text-sm md:text-base text-navy-900 tracking-tight">
+                      DISPLAY STOCK CONTROL
+                    </span>
+                    <span className="bg-slate-100 text-slate-700 font-mono text-[11px] font-bold px-1.5 py-0.5 rounded border border-slate-200">
+                      SESÉ OP
+                    </span>
+                  </div>
+                  <div className="hidden sm:block text-xs text-slate-500">
+                    Gestão Serializada de Peças Multimídia &amp; Displays · Cockpit 04
+                  </div>
                 </div>
               </div>
             </div>
@@ -298,12 +303,34 @@ export default function AppShell({ user, children }: { user: U; children: React.
 
               {/* Usuário Logado */}
               <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-full bg-navy-900 text-white flex items-center justify-center font-semibold text-xs">
+                <div className="w-8 h-8 rounded-full bg-navy-900 text-white flex items-center justify-center font-semibold text-xs shrink-0">
                   {user.name.charAt(0).toUpperCase()}
                 </div>
                 <div className="hidden sm:block text-right leading-tight">
-                  <div className="font-semibold text-navy-900 text-xs">{user.name}</div>
-                  <div className="text-[11px] text-slate-500 font-medium">{user.role}</div>
+                  <div className="font-semibold text-navy-900 text-xs flex items-center justify-end gap-1.5">
+                    <span>{user.name}</span>
+                    {user.shift === "MANHA" ? (
+                      <span className="px-1.5 py-0.2 rounded text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-200">
+                        1T
+                      </span>
+                    ) : user.shift === "NOITE" ? (
+                      <span className="px-1.5 py-0.2 rounded text-[10px] font-bold bg-indigo-100 text-indigo-800 border border-indigo-200">
+                        2T
+                      </span>
+                    ) : (
+                      <span className="px-1.5 py-0.2 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                        Geral
+                      </span>
+                    )}
+                  </div>
+                  <div className="text-[11px] text-slate-500 font-medium">
+                    {user.role} ·{" "}
+                    {user.shift === "MANHA"
+                      ? "1º Turno (Manhã)"
+                      : user.shift === "NOITE"
+                      ? "2º Turno (Noite)"
+                      : "Geral (1T & 2T)"}
+                  </div>
                 </div>
               </div>
 

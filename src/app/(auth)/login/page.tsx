@@ -7,6 +7,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
   Boxes,
+  Briefcase,
   CheckCircle2,
   Cpu,
   Eye,
@@ -29,7 +30,7 @@ export default function LoginPage() {
   const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
   const [serverError, setServerError] = useState("");
-  const [activeProfileTab, setActiveProfileTab] = useState<"admin" | "lider">("admin");
+  const [activeProfileTab, setActiveProfileTab] = useState<"admin" | "lider" | "administrativo">("admin");
 
   const {
     register,
@@ -44,12 +45,14 @@ export default function LoginPage() {
     },
   });
 
-  const selectPreset = (type: "admin" | "lider") => {
+  const selectPreset = (type: "admin" | "lider" | "administrativo") => {
     setActiveProfileTab(type);
     if (type === "admin") {
       setValue("email", "lucas.conceicao@gruposese.com");
-    } else {
+    } else if (type === "lider") {
       setValue("email", "lider1@suaempresa.com.br");
+    } else {
+      setValue("email", "administrativo1@suaempresa.com.br");
     }
   };
 
@@ -75,8 +78,12 @@ export default function LoginPage() {
           {/* Topo da Identidade Industrial */}
           <div className="flex flex-wrap items-center justify-between gap-3 pb-6 border-b border-slate-100">
             <div className="flex items-center gap-3">
-              <div className="w-11 h-11 rounded-xl bg-brand text-white flex items-center justify-center shadow-sm">
-                <Boxes className="h-6 w-6" />
+              <div className="w-12 h-12 rounded-xl overflow-hidden shadow-sm border border-slate-200 shrink-0 bg-[#1E3F90] flex items-center justify-center p-1">
+                <img
+                  src="/logo.jpg"
+                  alt="Grupo Sesé"
+                  className="w-full h-full object-contain"
+                />
               </div>
               <div>
                 <div className="flex items-center gap-2">
@@ -115,30 +122,42 @@ export default function LoginPage() {
             <label className="block text-xs font-semibold text-slate-600 mb-1.5 uppercase tracking-wider">
               Perfil de Operação &amp; Acesso
             </label>
-            <div className="grid grid-cols-2 gap-2 p-1 bg-slate-100 rounded-xl">
+            <div className="grid grid-cols-3 gap-1.5 p-1 bg-slate-100 rounded-xl">
               <button
                 type="button"
                 onClick={() => selectPreset("admin")}
-                className={`py-2 px-3 rounded-lg text-xs font-semibold transition-all flex items-center justify-center gap-2 ${
+                className={`py-2 px-2 rounded-lg text-xs font-semibold transition-all flex items-center justify-center gap-1.5 ${
                   activeProfileTab === "admin"
                     ? "bg-brand text-white shadow-sm"
                     : "text-slate-600 hover:text-slate-900"
                 }`}
               >
-                <ShieldCheck className="h-4 w-4" />
-                <span>Administrador / PCP</span>
+                <ShieldCheck className="h-4 w-4 shrink-0" />
+                <span className="truncate">Administrador / Geral</span>
               </button>
               <button
                 type="button"
                 onClick={() => selectPreset("lider")}
-                className={`py-2 px-3 rounded-lg text-xs font-semibold transition-all flex items-center justify-center gap-2 ${
+                className={`py-2 px-2 rounded-lg text-xs font-semibold transition-all flex items-center justify-center gap-1.5 ${
                   activeProfileTab === "lider"
                     ? "bg-brand text-white shadow-sm"
                     : "text-slate-600 hover:text-slate-900"
                 }`}
               >
-                <UserCheck className="h-4 w-4" />
-                <span>Líder de Operação</span>
+                <UserCheck className="h-4 w-4 shrink-0" />
+                <span className="truncate">Líder Operacional</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => selectPreset("administrativo")}
+                className={`py-2 px-2 rounded-lg text-xs font-semibold transition-all flex items-center justify-center gap-1.5 ${
+                  activeProfileTab === "administrativo"
+                    ? "bg-brand text-white shadow-sm"
+                    : "text-slate-600 hover:text-slate-900"
+                }`}
+              >
+                <Briefcase className="h-4 w-4 shrink-0" />
+                <span className="truncate">Administrativo</span>
               </button>
             </div>
           </div>
@@ -245,7 +264,7 @@ export default function LoginPage() {
         </div>
       </div>
 
-      {/* PAINEL DIREITO: MONITOR INDUSTRIAL E TELEMETRIA NISSAN */}
+      {/* PAINEL DIREITO: MONITOR INDUSTRIAL E TELEMETRIA SESÉ */}
       <div className="lg:w-5/12 bg-navy-900 text-white p-8 md:p-10 flex flex-col justify-between border-t lg:border-t-0 lg:border-l border-navy-800">
         <div>
           <div className="flex items-center justify-between pb-6 border-b border-white/10">
@@ -255,8 +274,8 @@ export default function LoginPage() {
               </span>
               <span className="text-base font-bold text-white">Status da Operação</span>
             </div>
-            <div className="h-8 w-8 rounded-lg bg-white/10 flex items-center justify-center">
-              <Cpu className="h-4 w-4 text-sky-400" />
+            <div className="h-10 w-10 rounded-xl overflow-hidden bg-[#1E3F90] flex items-center justify-center p-1 border border-white/10 shadow-sm">
+              <img src="/logo.jpg" alt="Logo Sesé" className="h-full w-full object-contain" />
             </div>
           </div>
 

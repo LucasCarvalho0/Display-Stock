@@ -168,9 +168,9 @@ export default function ReporteNissanPage() {
               {/* Logo Sesé */}
               <div className="bg-white rounded-md px-3 py-1.5 shadow-xs flex items-center justify-center">
                 <img
-                  src="/logo_0.jpeg"
+                  src="/logo.jpg"
                   alt="Logo Sesé"
-                  className="h-7 w-auto object-contain"
+                  className="h-8 w-auto object-contain rounded"
                 />
               </div>
 

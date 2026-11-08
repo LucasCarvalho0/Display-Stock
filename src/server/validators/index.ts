@@ -18,7 +18,7 @@ export const lookupQuerySchema = z.object({ code: text("Código", 60), classific
 export const movementCreateSchema = z.object({
   code: text("Código", 60), classification: cls, type: z.enum(["ENTRADA", "SAIDA"]), quantity: qty, note: z.string().trim().max(500).optional(),
 });
-export const movementQuerySchema = z.object({ from: ymd.optional(), to: ymd.optional(), code: z.string().optional(), product: z.string().optional(), client: z.string().optional(), userId: z.string().optional(), type: z.enum(["ENTRADA", "SAIDA", "AJUSTE_POSITIVO", "AJUSTE_NEGATIVO"]).optional(), classification: cls.optional(), ...page });
+export const movementQuerySchema = z.object({ from: ymd.optional(), to: ymd.optional(), code: z.string().optional(), product: z.string().optional(), client: z.string().optional(), userId: z.string().optional(), shift: z.enum(["MANHA", "NOITE", "GERAL"]).optional(), type: z.enum(["ENTRADA", "SAIDA", "AJUSTE_POSITIVO", "AJUSTE_NEGATIVO"]).optional(), classification: cls.optional(), ...page });
 export const correctionSchema = z.object({ quantity: qty.optional(), type: z.enum(["ENTRADA", "SAIDA"]).optional(), note: z.string().trim().max(500).nullable().optional(), void: z.boolean().optional(), justification: text("Justificativa", 500).min(5, "A justificativa precisa ter ao menos 5 caracteres.") });
 
 const shift = z.enum(["MANHA", "NOITE"], { errorMap: () => ({ message: "Turno inválido." }) });
@@ -32,7 +32,7 @@ export const approvalSchema = z.object({ discrepancyId: z.string().optional(), d
 export const reportQuerySchema = z.object({ kind: z.enum(["RESUMO_NISSAN", "RESUMO_GERAL"]).default("RESUMO_NISSAN"), date: ymd });
 export const reportExportSchema = z.object({ kind: z.enum(["RESUMO_NISSAN", "RESUMO_GERAL"]), date: ymd, format: z.enum(["XLSX", "PDF"]) });
 
-export const userCreateSchema = z.object({ name: text("Nome", 120), email: z.string().email("E-mail inválido."), password: z.string().min(10, "Mínimo de 10 caracteres."), roleId: z.string().min(1) });
-export const userUpdateSchema = z.object({ name: z.string().trim().min(1).max(120).optional(), roleId: z.string().optional(), active: z.boolean().optional(), password: z.string().min(10).optional() });
+export const userCreateSchema = z.object({ name: text("Nome", 120), email: z.string().email("E-mail inválido."), password: z.string().min(10, "Mínimo de 10 caracteres."), roleId: z.string().min(1, "Perfil é obrigatório."), shift: z.enum(["MANHA", "NOITE", "GERAL"]).default("GERAL") });
+export const userUpdateSchema = z.object({ name: z.string().trim().min(1).max(120).optional(), roleId: z.string().optional(), shift: z.enum(["MANHA", "NOITE", "GERAL"]).optional(), active: z.boolean().optional(), password: z.string().min(10).optional() });
 export const rolePermissionsSchema = z.object({ permissions: z.array(z.string()) });
 export const importConfirmSchema = z.object({ batchId: z.string().min(1) });

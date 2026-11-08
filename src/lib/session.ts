@@ -9,7 +9,13 @@ const TTL_HOURS = 10;
 const key = () => new TextEncoder().encode(env().SESSION_SECRET);
 
 export type AuthUser = {
-  id: string; name: string; email: string; role: string; permissions: string[]; mustChangePassword: boolean;
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+  shift: "MANHA" | "NOITE" | "GERAL";
+  permissions: string[];
+  mustChangePassword: boolean;
 };
 
 export async function createSession(userId: string, ip?: string, userAgent?: string) {
@@ -41,8 +47,15 @@ export async function getCurrentUser(): Promise<AuthUser | null> {
   });
   if (!s || s.expiresAt < new Date() || !s.user.active) return null;
   const u = s.user;
-  return { id: u.id, name: u.name, email: u.email, role: u.role.name, mustChangePassword: u.mustChangePassword,
-    permissions: u.role.permissions.map((p) => p.permission.key) };
+  return {
+    id: u.id,
+    name: u.name,
+    email: u.email,
+    role: u.role.name,
+    shift: (u.shift as "MANHA" | "NOITE" | "GERAL") || "GERAL",
+    mustChangePassword: u.mustChangePassword,
+    permissions: u.role.permissions.map((p) => p.permission.key),
+  };
 }
 export async function requireUser(): Promise<AuthUser> {
   const u = await getCurrentUser();

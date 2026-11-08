@@ -6,7 +6,7 @@ import { ctx } from "./setup";
 afterAll(() => prisma.$disconnect());
 
 async function actor(email: string) { const u = await prisma.user.findFirstOrThrow({ where: { email }, include: { role: { include: { permissions: { include: { permission: true } } } } } });
-  return { id: u.id, name: u.name, email: u.email, role: u.role.name, mustChangePassword: false, permissions: u.role.permissions.map((p) => p.permission.key) }; }
+  return { id: u.id, name: u.name, email: u.email, role: u.role.name, shift: (u.shift as "MANHA" | "NOITE" | "GERAL") || "GERAL", mustChangePassword: false, permissions: u.role.permissions.map((p) => p.permission.key) }; }
 
 describe("fluxo completo de inventário (apenas peças normais)", () => {
   it("inicia → conta manhã/noite → compara → bloqueia fechamento → justifica → aprova → fecha", async () => {

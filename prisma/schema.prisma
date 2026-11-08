@@ -27,6 +27,7 @@ enum MovementStatus {
 enum Shift {
   MANHA
   NOITE
+  GERAL
 }
 
 enum InventoryStatus {
@@ -107,6 +108,7 @@ model User {
   lockedUntil        DateTime?
   roleId             String
   role               Role                     @relation(fields: [roleId], references: [id])
+  shift              Shift                    @default(GERAL)
   createdAt          DateTime                 @default(now())
   updatedAt          DateTime                 @updatedAt
   sessions           Session[]
@@ -199,6 +201,7 @@ model Movement {
   number        String             @unique
   type          MovementType
   status        MovementStatus     @default(ATIVA)
+  shift         Shift              @default(GERAL)
   productId     String
   product       Product            @relation(fields: [productId], references: [id])
   quantity      Int
