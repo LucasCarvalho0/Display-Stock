@@ -63,7 +63,8 @@ export default function LoginPage() {
       router.push(res.mustChangePassword ? "/trocar-senha" : "/dashboard");
       router.refresh();
     } catch (e: any) {
-      setServerError(e.message || "Credenciais inválidas.");
+      const msg = e.details && e.details !== e.message ? `${e.message} - ${e.details}` : (e.message || "Credenciais inválidas.");
+      setServerError(msg);
     }
   });
 

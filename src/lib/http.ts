@@ -27,7 +27,13 @@ function errorResponse(e: unknown) {
   }
   const msg = e instanceof Error ? `${e.constructor.name}: ${e.message}` : String(e);
   console.error("[api] erro inesperado:", msg, e instanceof Error ? e.stack : "");
-  return NextResponse.json({ error: { code: "ERRO_INTERNO", message: "Erro interno. Tente novamente ou contate o suporte.", details: process.env.NODE_ENV !== "production" ? msg : undefined } }, { status: 500 });
+  return NextResponse.json({
+    error: {
+      code: "ERRO_INTERNO",
+      message: e instanceof Error ? `${e.message}` : "Erro interno. Tente novamente ou contate o suporte.",
+      details: msg,
+    },
+  }, { status: 500 });
 }
 
 /** Wrapper padrão de Route Handlers: sessão → CSRF → rate limit → permissão → validação Zod → handler. */
@@ -39,8 +45,26 @@ export function route<B extends ZodTypeAny = z.ZodUndefined, Q extends ZodTypeAn
       const ip = clientIp(req);
       if (!["GET", "HEAD", "OPTIONS"].includes(req.method)) {
         const origin = req.headers.get("origin");
-        const host = req.headers.get("host");
-        if (origin && new URL(origin).host !== host && origin !== env().APP_URL) throw forbidden("Origem da requisição não permitida.");
+        const host = req.headers.get("x-forwarded-host") || req.headers.get("host");
+        if (origin && origin !== "null") {
+          try {
+            const originHost = new URL(origin).host;
+            const appUrlHost = new URL(env().APP_URL).host;
+            const isMatch =
+              !host ||
+              originHost === host ||
+              originHost === appUrlHost ||
+              originHost.endsWith(".vercel.app") ||
+              originHost.startsWith("localhost");
+            if (!isMatch) {
+              console.warn(`[csrf] Origem bloqueada: ${origin} (host: ${host}, appUrlHost: ${appUrlHost})`);
+              throw forbidden("Origem da requisição não permitida.");
+            }
+          } catch (urlErr) {
+            if (urlErr instanceof AppError) throw urlErr;
+            // Se origin for formato especial (PWA standalone, app scheme), não bloquear por falha de parse
+          }
+        }
       }
       if (opts.rate) {
         const r = rateLimit(`${opts.rate.key ?? req.nextUrl.pathname}:${ip}`, opts.rate.limit, opts.rate.windowMs);
