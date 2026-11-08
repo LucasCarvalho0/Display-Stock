@@ -30,7 +30,7 @@ export default function LoginPage() {
   const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
   const [serverError, setServerError] = useState("");
-  const [activeProfileTab, setActiveProfileTab] = useState<"admin" | "lider" | "administrativo">("admin");
+  const [activeProfileTab, setActiveProfileTab] = useState<"administrativo" | "lider">("administrativo");
 
   const {
     register,
@@ -45,14 +45,12 @@ export default function LoginPage() {
     },
   });
 
-  const selectPreset = (type: "admin" | "lider" | "administrativo") => {
+  const selectPreset = (type: "administrativo" | "lider") => {
     setActiveProfileTab(type);
-    if (type === "admin") {
+    if (type === "administrativo") {
       setValue("email", "lucas.conceicao@gruposese.com");
-    } else if (type === "lider") {
-      setValue("email", "lider1@suaempresa.com.br");
     } else {
-      setValue("email", "administrativo1@suaempresa.com.br");
+      setValue("email", "lider1@suaempresa.com.br");
     }
   };
 
@@ -122,42 +120,30 @@ export default function LoginPage() {
             <label className="block text-xs font-semibold text-slate-600 mb-1.5 uppercase tracking-wider">
               Perfil de Operação &amp; Acesso
             </label>
-            <div className="grid grid-cols-3 gap-1.5 p-1 bg-slate-100 rounded-xl">
-              <button
-                type="button"
-                onClick={() => selectPreset("admin")}
-                className={`py-2 px-2 rounded-lg text-xs font-semibold transition-all flex items-center justify-center gap-1.5 ${
-                  activeProfileTab === "admin"
-                    ? "bg-brand text-white shadow-sm"
-                    : "text-slate-600 hover:text-slate-900"
-                }`}
-              >
-                <ShieldCheck className="h-4 w-4 shrink-0" />
-                <span className="truncate">Administrador / Geral</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => selectPreset("lider")}
-                className={`py-2 px-2 rounded-lg text-xs font-semibold transition-all flex items-center justify-center gap-1.5 ${
-                  activeProfileTab === "lider"
-                    ? "bg-brand text-white shadow-sm"
-                    : "text-slate-600 hover:text-slate-900"
-                }`}
-              >
-                <UserCheck className="h-4 w-4 shrink-0" />
-                <span className="truncate">Líder Operacional</span>
-              </button>
+            <div className="grid grid-cols-2 gap-2 p-1 bg-slate-100 rounded-xl">
               <button
                 type="button"
                 onClick={() => selectPreset("administrativo")}
-                className={`py-2 px-2 rounded-lg text-xs font-semibold transition-all flex items-center justify-center gap-1.5 ${
+                className={`py-2 px-3 rounded-lg text-xs font-semibold transition-all flex items-center justify-center gap-2 ${
                   activeProfileTab === "administrativo"
                     ? "bg-brand text-white shadow-sm"
                     : "text-slate-600 hover:text-slate-900"
                 }`}
               >
                 <Briefcase className="h-4 w-4 shrink-0" />
-                <span className="truncate">Administrativo</span>
+                <span>Administrativo</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => selectPreset("lider")}
+                className={`py-2 px-3 rounded-lg text-xs font-semibold transition-all flex items-center justify-center gap-2 ${
+                  activeProfileTab === "lider"
+                    ? "bg-brand text-white shadow-sm"
+                    : "text-slate-600 hover:text-slate-900"
+                }`}
+              >
+                <UserCheck className="h-4 w-4 shrink-0" />
+                <span>Líder Operacional</span>
               </button>
             </div>
           </div>
