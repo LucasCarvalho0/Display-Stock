@@ -1,6 +1,12 @@
 import { PrismaClient, Prisma } from "@prisma/client";
 const g = globalThis as unknown as { prisma?: PrismaClient };
-export const prisma = g.prisma ?? new PrismaClient({ log: process.env.NODE_ENV === "development" ? ["warn", "error"] : ["error"] });
+const dbUrl = process.env.DATABASE_URL;
+export const prisma =
+  g.prisma ??
+  new PrismaClient({
+    datasources: dbUrl ? { db: { url: dbUrl } } : undefined,
+    log: process.env.NODE_ENV === "development" ? ["warn", "error"] : ["error"],
+  });
 if (process.env.NODE_ENV !== "production") g.prisma = prisma;
 export type Tx = Prisma.TransactionClient;
 /** Transação serializável com retry em caso de conflito de serialização (P2034). */

@@ -29,29 +29,18 @@ export default function LoginPage() {
   const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
   const [serverError, setServerError] = useState("");
-  const [activeProfileTab, setActiveProfileTab] = useState<"administrativo" | "lider">("administrativo");
 
   const {
     register,
     handleSubmit,
-    setValue,
     formState: { errors, isSubmitting },
   } = useForm<FormData>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
-      email: "lucas.conceicao@gruposese.com",
+      email: "",
       password: "",
     },
   });
-
-  const selectPreset = (type: "administrativo" | "lider") => {
-    setActiveProfileTab(type);
-    if (type === "administrativo") {
-      setValue("email", "lucas.conceicao@gruposese.com");
-    } else {
-      setValue("email", "lider1@suaempresa.com.br");
-    }
-  };
 
   const onSubmit = handleSubmit(async (data) => {
     setServerError("");
@@ -113,39 +102,6 @@ export default function LoginPage() {
               Entre com suas credenciais corporativas autorizadas para inicializar operações de
               conferência e apontamento.
             </p>
-          </div>
-
-          {/* Seletor de Atalho de Perfil */}
-          <div className="mb-5">
-            <label className="block text-xs font-semibold text-slate-600 mb-1.5 uppercase tracking-wider">
-              Perfil de Operação &amp; Acesso
-            </label>
-            <div className="grid grid-cols-2 gap-2 p-1 bg-slate-100 rounded-xl">
-              <button
-                type="button"
-                onClick={() => selectPreset("administrativo")}
-                className={`py-2 px-3 rounded-lg text-xs font-semibold transition-all flex items-center justify-center gap-2 ${
-                  activeProfileTab === "administrativo"
-                    ? "bg-brand text-white shadow-sm"
-                    : "text-slate-600 hover:text-slate-900"
-                }`}
-              >
-                <Briefcase className="h-4 w-4 shrink-0" />
-                <span>Administrativo</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => selectPreset("lider")}
-                className={`py-2 px-3 rounded-lg text-xs font-semibold transition-all flex items-center justify-center gap-2 ${
-                  activeProfileTab === "lider"
-                    ? "bg-brand text-white shadow-sm"
-                    : "text-slate-600 hover:text-slate-900"
-                }`}
-              >
-                <UserCheck className="h-4 w-4 shrink-0" />
-                <span>Líder Operacional</span>
-              </button>
-            </div>
           </div>
 
           {/* Formulário */}
