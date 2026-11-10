@@ -142,7 +142,7 @@ function Count({ inv, reload, can }: { inv: any; reload: () => void; can: boolea
     }
   }, [cur?.id, cur?.warehouseQty, cur?.preAssemblyQty]);
 
-  const prog = inv.progress[shift];
+  const prog = inv.progress[shift] ?? { counted: 0, total: 0 };
   const other = shift === "MANHA" ? "NOITE" : "MANHA";
 
   // Salva no banco de dados e avança

@@ -11,7 +11,7 @@ export default function Inventario() {
   const router = useRouter(); const { data, loading, reload } = useFetch<any[]>("/api/inventory"); const { data: users } = useFetch<any[]>("/api/users"); const { data: me } = useFetch<any>("/api/auth/me");
   const [open, setOpen] = useState(false); const [f, setF] = useState({ referenceDate: today(), shift: "MANHA", responsibleId: "" }); const [err, setErr] = useState(""); const [busy, setBusy] = useState(false);
   const dow = new Date(`${f.referenceDate}T12:00:00`).getDay(); const unusualDay = dow !== 1 && dow !== 5;
-  const start = async () => { setBusy(true); setErr(""); try { const r = await api<{ id: string }>("/api/inventory", { method: "POST", json: { ...f, responsibleId: f.responsibleId || me.id } }); router.push(`/inventario/${r.id}`); } catch (e: any) { setErr(e.message); reload(); } finally { setBusy(false); } };
+  const start = async () => { setBusy(true); setErr(""); try { const r = await api<{ id: string }>("/api/inventory", { method: "POST", json: { ...f, responsibleId: f.responsibleId || me?.id || "" } }); router.push(`/inventario/${r.id}`); } catch (e: any) { setErr(e.message ?? "Erro ao iniciar inventário. Tente novamente."); reload(); } finally { setBusy(false); } };
   return <>
     <PageHeader
       title="Inventário de Displays &amp; Cockpit"
