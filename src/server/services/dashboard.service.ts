@@ -79,13 +79,25 @@ async function inventoryPanel() {
     if (n("ABERTA") + n("REJEITADA")) alerts.push({ tone: "yellow", text: "Justificativa pendente" });
     if (s.status === "AGUARDANDO_APROVACAO") alerts.push({ tone: "yellow", text: "Inventário aguardando aprovação" });
   }
+  // Só compara quando a contagem já foi encerrada (COMPARADO, JUSTIFICATIVAS, AGUARDANDO_APROVACAO, FECHADO)
+  // Durante CONTAGEM_MANHA / CONTAGEM_NOITE, compareInventory pode falhar pois ainda não há dados suficientes
+  const FINISHED_STATUSES = ["COMPARADO", "JUSTIFICATIVAS", "AGUARDANDO_APROVACAO", "FECHADO"];
   let table: unknown[] = [];
-  if (s.status !== "INICIADO") {
-    const cmp = await compareInventory(s.id);
-    table = cmp.rows.map((r: any) => { const last = r.NOITE?.physicalQty !== undefined ? r.NOITE : r.MANHA;
-      const diff = last?.difference ?? null;
-      return { code: r.code, description: r.description, system: last?.expectedQty ?? null, physical: last?.physicalQty ?? null, difference: diff,
-        situation: diff === null ? "PENDENTE" : diff === 0 ? "CORRETO" : s.status === "FECHADO" ? "TRATADO" : "ANALISE" }; });
+  if (FINISHED_STATUSES.includes(s.status)) {
+    try {
+      const cmp = await compareInventory(s.id);
+      table = cmp.rows.map((r: any) => {
+        const last = r.NOITE?.physicalQty !== undefined ? r.NOITE : r.MANHA;
+        const diff = last?.difference ?? null;
+        return {
+          code: r.code, description: r.description,
+          system: last?.expectedQty ?? null, physical: last?.physicalQty ?? null, difference: diff,
+          situation: diff === null ? "PENDENTE" : diff === 0 ? "CORRETO" : s.status === "FECHADO" ? "TRATADO" : "ANALISE",
+        };
+      });
+    } catch {
+      table = [];
+    }
   }
   return { exists: true as const, id: s.id, code: s.code, referenceDate: s.referenceDate, status: s.status, responsible: s.responsible.name, morning: manha, night: noite,
     conferred: Math.max(manha.counted, noite.counted), discrepancies: total, justifications: n("JUSTIFICADA") + n("APROVADA"), approved: n("APROVADA"), pendingJustifications: n("ABERTA") + n("REJEITADA"), alerts, table };

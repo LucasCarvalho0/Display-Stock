@@ -40,9 +40,9 @@ export default function Inventario() {
                   {s.startShift === "MANHA" ? "Manhã" : "Noite"}
                 </span>
               </td>
-              <td>{s.responsible.name}</td>
+              <td>{s.responsible?.name ?? "—"}</td>
               <td className="font-bold text-center">
-                {s._count.discrepancies > 0 ? (
+                {(s._count?.discrepancies ?? 0) > 0 ? (
                   <span className="text-red-600 font-mono font-bold bg-red-50 px-2 py-0.5 rounded border border-red-200">
                     {s._count.discrepancies}
                   </span>
@@ -51,7 +51,9 @@ export default function Inventario() {
                 )}
               </td>
               <td>
-                <Badge tone={INV_STATUS[s.status][1]}>{INV_STATUS[s.status][0]}</Badge>
+                <Badge tone={(INV_STATUS[s.status] ?? INV_STATUS["INICIADO"])[1]}>
+                  {(INV_STATUS[s.status] ?? INV_STATUS["INICIADO"])[0]}
+                </Badge>
               </td>
               <td>
                 <Link

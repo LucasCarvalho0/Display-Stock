@@ -56,7 +56,7 @@ export default function InventarioDetalhe() {
   if (error) return <ErrorBox message={error} />;
   if (!inv || !me) return <Spinner />;
 
-  const [label, tone] = INV_STATUS[inv.status];
+  const [label, tone] = INV_STATUS[inv.status] ?? ["Em andamento", "yellow"];
   const has = (p: string) => me.permissions.includes(p);
   const tabs: [Tab, string, string][] = [
     ["contagem", "1. Contagem em 2 Etapas", "bg-blue-600"],
