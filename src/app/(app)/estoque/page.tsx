@@ -111,19 +111,19 @@ export default function EstoquePage() {
         </div>
 
         <div className="flex items-center gap-2 self-start sm:self-auto">
-          <Button variant="secondary" onClick={exportCsv} className="text-xs">
+          <Button variant="indigo" onClick={exportCsv} className="text-xs shadow-sm font-bold">
             <Download className="h-4 w-4" />
             <span>Exportar CSV</span>
           </Button>
           <Link
             href="/entrada"
-            className="px-3 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold flex items-center gap-1.5 transition shadow-xs"
+            className="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center gap-1.5 transition shadow-md active:scale-95"
           >
             <span>+ Entrada</span>
           </Link>
           <Link
             href="/saida"
-            className="px-3 py-2 rounded-lg bg-brand hover:bg-brand-dark text-white text-xs font-semibold flex items-center gap-1.5 transition shadow-xs"
+            className="px-4 py-2.5 rounded-xl bg-[#1E3F90] hover:bg-blue-800 text-white text-xs font-bold flex items-center gap-1.5 transition shadow-md active:scale-95"
           >
             <span>- Saída</span>
           </Link>
@@ -300,7 +300,7 @@ export default function EstoquePage() {
             <>
               <div className="overflow-x-auto border border-slate-200 rounded-lg">
                 <table className="w-full text-left text-xs border-collapse">
-                  <thead className="bg-navy-900 text-white uppercase text-[11px] tracking-wider">
+                  <thead className="bg-[#1E3F90] text-white uppercase text-[11px] tracking-wider">
                     <tr>
                       <th className="py-2.5 px-3">
                         <Th k="code">Código / Part Number</Th>
@@ -312,8 +312,14 @@ export default function EstoquePage() {
                       <th className="py-2.5 px-3">
                         <Th k="client">Cliente</Th>
                       </th>
-                      <th className="py-2.5 px-3 text-right">
-                        <Th k="balance">Saldo Atual</Th>
+                      <th className="py-2.5 px-3 text-right bg-blue-800">
+                        <Th k="warehouseQty">Pallets Fechados</Th>
+                      </th>
+                      <th className="py-2.5 px-3 text-right bg-amber-700">
+                        <Th k="preAssemblyQty">Pré-Montagem</Th>
+                      </th>
+                      <th className="py-2.5 px-3 text-right bg-emerald-700 font-bold">
+                        <Th k="balance">Saldo Total</Th>
                       </th>
                       <th className="py-2.5 px-3 text-right">Estoque Mínimo</th>
                       <th className="py-2.5 px-3 text-center">Tipo</th>
@@ -337,7 +343,13 @@ export default function EstoquePage() {
                           <td className="py-2.5 px-3 text-navy-900">{row.description}</td>
                           <td className="py-2.5 px-3 text-slate-600">{row.model}</td>
                           <td className="py-2.5 px-3 text-slate-600">{row.client}</td>
-                          <td className="py-2.5 px-3 text-right font-mono font-bold text-sm text-navy-900">
+                          <td className="py-2.5 px-3 text-right font-mono font-semibold text-blue-700 bg-blue-50/40">
+                            {fmtN(row.warehouseQty ?? 0)}
+                          </td>
+                          <td className="py-2.5 px-3 text-right font-mono font-semibold text-amber-700 bg-amber-50/40">
+                            {fmtN(row.preAssemblyQty ?? 0)}
+                          </td>
+                          <td className="py-2.5 px-3 text-right font-mono font-extrabold text-sm text-emerald-800 bg-emerald-50/50">
                             {fmtN(row.balance)}
                           </td>
                           <td className="py-2.5 px-3 text-right font-mono text-slate-500">
@@ -357,9 +369,9 @@ export default function EstoquePage() {
                             <button
                               type="button"
                               onClick={() => setSelectedProduct(row)}
-                              className="inline-flex items-center gap-1 text-brand hover:underline font-semibold"
+                              className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#1E3F90] text-white hover:bg-[#152e6b] font-bold text-xs shadow-md hover:shadow-lg active:scale-95 transition min-h-[36px]"
                             >
-                              <HistoryIcon className="h-3.5 w-3.5" />
+                              <HistoryIcon className="h-4 w-4 text-blue-200" />
                               <span>Histórico</span>
                             </button>
                           </td>

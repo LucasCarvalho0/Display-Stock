@@ -16,12 +16,51 @@ export default function Produtos() {
   const toggle = async (r: any) => { try { await api(`/api/products/${r.id}`, { method: "PATCH", json: { active: !r.active } }); reload(); } catch (e: any) { toast(e.message, "err"); } };
   const setMin = async (r: any) => { const v = prompt(`Estoque mínimo de ${r.code}:`, String(r.minStock)); if (v === null) return; try { await api(`/api/products/${r.id}`, { method: "PATCH", json: { minStock: Number(v) } }); reload(); } catch (e: any) { toast(e.message, "err"); } };
   return <>
-    <PageHeader title="Cadastro de produtos" subtitle="Peças normais e NG são cadastros distintos (o NG recebe o sufixo “ NG” no código)" action={canEdit && <div className="flex gap-2"><Button variant="secondary" onClick={() => setImpOpen(true)}><Upload className="h-4 w-4" />Importar Excel</Button><Button onClick={() => setNewOpen(true)}>Novo produto</Button></div>} />
+    <PageHeader
+      title="Cadastro de Produtos"
+      subtitle="Peças normais e NG são cadastros distintos (o NG recebe o sufixo “ NG” no código)"
+      action={
+        canEdit && (
+          <div className="flex gap-2">
+            <Button variant="indigo" onClick={() => setImpOpen(true)}>
+              <Upload className="h-4 w-4" />
+              Importar Excel
+            </Button>
+            <Button variant="success" onClick={() => setNewOpen(true)}>
+              + Novo Produto
+            </Button>
+          </div>
+        )
+      }
+    />
     <Card><div className="mb-3 grid gap-2 md:grid-cols-3"><Input placeholder="Pesquisar código, descrição, modelo ou cliente" value={f.q} onChange={(e) => setF({ ...f, q: e.target.value, page: 1 })} />
       <Select value={f.classification} onChange={(e) => setF({ ...f, classification: e.target.value, page: 1 })}><option value="">Todas as classificações</option><option value="NORMAL">Normal</option><option value="NG">NG</option></Select></div>
       {loading && !data ? <Spinner /> : data && <><Table head={["Código", "Descrição", "Modelo", "Cliente", "Classificação", "Mínimo", "Status", ""]} empty={data.rows.length ? undefined : "Nenhum produto."}>
         {data.rows.map((r: any) => <tr key={r.id}><td className="font-mono text-xs">{r.code}</td><td>{r.description}</td><td>{r.model}</td><td>{r.client}</td><td><Badge tone={r.classification === "NG" ? "red" : "green"}>{r.classification === "NG" ? "NG" : "Normal"}</Badge></td><td>{fmtN(r.minStock)}</td><td>{r.active ? <Badge tone="green">Ativo</Badge> : <Badge>Inativo</Badge>}</td>
-          <td className="space-x-3 whitespace-nowrap text-xs">{canEdit && <><button className="text-brand" onClick={() => setMin(r)}>Mínimo</button><button className="text-slate-500" onClick={() => toggle(r)}>{r.active ? "Inativar" : "Ativar"}</button></>}</td></tr>)}</Table>
+          <td className="space-x-2 whitespace-nowrap text-xs">
+            {canEdit && (
+              <>
+                <button
+                  type="button"
+                  className="px-3.5 py-1.5 rounded-xl bg-[#1E3F90] text-white hover:bg-blue-800 font-bold text-xs inline-flex items-center gap-1.5 transition shadow-sm hover:shadow active:scale-95 min-h-[36px]"
+                  onClick={() => setMin(r)}
+                >
+                  <span>Mínimo</span>
+                </button>
+                <button
+                  type="button"
+                  className={`px-3.5 py-1.5 rounded-xl font-bold text-xs inline-flex items-center gap-1.5 transition shadow-sm hover:shadow active:scale-95 text-white min-h-[36px] ${
+                    r.active
+                      ? "bg-rose-600 hover:bg-rose-700"
+                      : "bg-emerald-600 hover:bg-emerald-700"
+                  }`}
+                  onClick={() => toggle(r)}
+                >
+                  <span>{r.active ? "Inativar" : "Ativar"}</span>
+                </button>
+              </>
+            )}
+          </td></tr>)}</Table>
         <Pager page={data.page} pageSize={data.pageSize} total={data.total} onChange={(p) => setF({ ...f, page: p })} /></>}</Card>
     <NewProduct open={newOpen} onClose={() => setNewOpen(false)} clients={clients ?? []} onDone={() => { setNewOpen(false); reload(); }} />
     <ImportModal open={impOpen} onClose={() => setImpOpen(false)} onDone={() => { setImpOpen(false); reload(); }} />

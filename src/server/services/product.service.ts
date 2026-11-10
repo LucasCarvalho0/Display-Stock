@@ -51,9 +51,27 @@ export async function listStock(f: StockQuery) {
     ] }),
   };
   const all = await prisma.product.findMany({ where, include: { client: true, balance: true } });
-  let rows = all.map((p) => { const balance = p.balance?.quantity ?? 0;
-    return { id: p.id, code: p.code, description: p.description, model: p.model, client: p.client.name, clientId: p.clientId, classification: p.classification,
-      balance, minStock: p.minStock, active: p.active, status: balance <= 0 ? "ZERADO" : balance <= p.minStock ? "ABAIXO_MINIMO" : "OK", sortOrder: p.sortOrder }; });
+  let rows = all.map((p) => {
+    const balance = p.balance?.quantity ?? 0;
+    const warehouseQty = p.balance?.warehouseQty ?? 0;
+    const preAssemblyQty = p.balance?.preAssemblyQty ?? 0;
+    return {
+      id: p.id,
+      code: p.code,
+      description: p.description,
+      model: p.model,
+      client: p.client.name,
+      clientId: p.clientId,
+      classification: p.classification,
+      warehouseQty,
+      preAssemblyQty,
+      balance,
+      minStock: p.minStock,
+      active: p.active,
+      status: balance <= 0 ? "ZERADO" : balance <= p.minStock ? "ABAIXO_MINIMO" : "OK",
+      sortOrder: p.sortOrder,
+    };
+  });
   if (f.status) rows = rows.filter((r) => r.status === f.status);
   const key = (f.sort ?? "sortOrder") as keyof (typeof rows)[number];
   const dir = f.dir === "desc" ? -1 : 1;

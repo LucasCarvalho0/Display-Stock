@@ -57,7 +57,18 @@ export async function startShift(sessionId: string, shift: Shift, user: AuthUser
   });
 }
 
-export async function saveCount(sessionId: string, i: { productId: string; shift: Shift; physicalQty: number }, user: AuthUser, ip?: string) {
+export async function saveCount(
+  sessionId: string,
+  i: {
+    productId: string;
+    shift: Shift;
+    physicalQty?: number;
+    warehouseQty?: number;
+    preAssemblyQty?: number;
+  },
+  user: AuthUser,
+  ip?: string
+) {
   return transaction(async (tx) => {
     const s = await tx.inventorySession.findUnique({ where: { id: sessionId } });
     if (!s) throw notFound("Inventário não encontrado.");
@@ -66,9 +77,31 @@ export async function saveCount(sessionId: string, i: { productId: string; shift
     const row = await tx.inventoryCount.findUnique({ where: { sessionId_productId_shift: { sessionId, productId: i.productId, shift: i.shift } }, include: { product: true } });
     if (!row) throw notFound("Produto não faz parte deste turno do inventário.");
     if (row.product.classification !== s.classification) throw badRequest("Produto de classificação diferente do inventário.");
-    const upd = await tx.inventoryCount.update({ where: { id: row.id }, data: { physicalQty: i.physicalQty, countedAt: new Date(), countedById: user.id } });
-    await audit(tx, { userId: user.id, action: "CONTAGEM_REGISTRADA", entity: "InventoryCount", entityId: row.id, ip,
-      before: { physicalQty: row.physicalQty }, after: { physicalQty: i.physicalQty, produto: row.product.code, turno: i.shift } });
+
+    const wQty = i.warehouseQty !== undefined ? i.warehouseQty : (row.warehouseQty ?? 0);
+    const pQty = i.preAssemblyQty !== undefined ? i.preAssemblyQty : (row.preAssemblyQty ?? 0);
+    const totalPhysical = i.physicalQty !== undefined ? i.physicalQty : (wQty + pQty);
+
+    const upd = await tx.inventoryCount.update({
+      where: { id: row.id },
+      data: {
+        warehouseQty: i.warehouseQty !== undefined ? i.warehouseQty : row.warehouseQty,
+        preAssemblyQty: i.preAssemblyQty !== undefined ? i.preAssemblyQty : row.preAssemblyQty,
+        physicalQty: totalPhysical,
+        countedAt: new Date(),
+        countedById: user.id,
+      },
+    });
+
+    await audit(tx, {
+      userId: user.id,
+      action: "CONTAGEM_REGISTRADA",
+      entity: "InventoryCount",
+      entityId: row.id,
+      ip,
+      before: { physicalQty: row.physicalQty, warehouseQty: row.warehouseQty, preAssemblyQty: row.preAssemblyQty },
+      after: { physicalQty: totalPhysical, warehouseQty: upd.warehouseQty, preAssemblyQty: upd.preAssemblyQty, produto: row.product.code, turno: i.shift },
+    });
     return upd;
   });
 }
@@ -101,8 +134,18 @@ export async function compareInventory(sessionId: string) {
     const movements = byProduct.get(c.productId) ?? [];
     if (c.physicalQty !== null && c.countedAt) {
       const e = computeExpected({ referenceBalance: c.referenceBalance, referenceAt: c.referenceAt, countedAt: c.countedAt, movements });
-      p[c.shift] = { referenceBalance: c.referenceBalance, referenceAt: c.referenceAt, countedAt: c.countedAt, physicalQty: c.physicalQty,
-        expectedQty: e.expected, netMovements: e.netMovements, difference: difference(c.physicalQty, e.expected), movements: e.related };
+      p[c.shift] = {
+        referenceBalance: c.referenceBalance,
+        referenceAt: c.referenceAt,
+        countedAt: c.countedAt,
+        warehouseQty: c.warehouseQty,
+        preAssemblyQty: c.preAssemblyQty,
+        physicalQty: c.physicalQty,
+        expectedQty: e.expected,
+        netMovements: e.netMovements,
+        difference: difference(c.physicalQty, e.expected),
+        movements: e.related,
+      };
     } else p[c.shift] = { pending: true, referenceBalance: c.referenceBalance };
     products.set(c.productId, p);
   }
@@ -233,8 +276,19 @@ export async function getInventory(sessionId: string) {
 
 export async function getCountItems(sessionId: string, shift: Shift) {
   const items = await prisma.inventoryCount.findMany({ where: { sessionId, shift }, include: { product: true }, orderBy: { position: "asc" } });
-  return items.map((c) => ({ id: c.id, productId: c.productId, position: c.position, code: c.product.code, description: c.product.description, model: c.product.model,
-    systemBalance: c.referenceBalance, physicalQty: c.physicalQty, countedAt: c.countedAt }));
+  return items.map((c) => ({
+    id: c.id,
+    productId: c.productId,
+    position: c.position,
+    code: c.product.code,
+    description: c.product.description,
+    model: c.product.model,
+    systemBalance: c.referenceBalance,
+    warehouseQty: c.warehouseQty,
+    preAssemblyQty: c.preAssemblyQty,
+    physicalQty: c.physicalQty,
+    countedAt: c.countedAt,
+  }));
 }
 
 export async function listInventories() {

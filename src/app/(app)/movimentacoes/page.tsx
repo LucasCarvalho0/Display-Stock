@@ -133,7 +133,7 @@ export default function Movimentacoes() {
         ) : data && (
           <>
             <Table
-              head={["Nº Movimento", "Data/Hora", "Turno", "Código", "Operação", "Qtd", "Responsável", "Situação"]}
+              head={["Nº Movimento", "Data/Hora", "Turno", "Código", "Operação", "Qtd", "Responsável", "Situação", "Ação"]}
               empty={data.rows.length ? undefined : "Nenhuma movimentação encontrada para os filtros aplicados."}
             >
               {data.rows.map((m: any) => {
@@ -170,6 +170,18 @@ export default function Movimentacoes() {
                       ) : (
                         <Badge tone="green">Ativa</Badge>
                       )}
+                    </td>
+                    <td>
+                      <button
+                        type="button"
+                        className="px-2.5 py-1 rounded-xl bg-blue-50 text-blue-700 hover:bg-blue-600 hover:text-white border border-blue-200 font-bold text-xs inline-flex items-center gap-1 transition shadow-2xs active:scale-95"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSel(m.id);
+                        }}
+                      >
+                        Auditar
+                      </button>
                     </td>
                   </tr>
                 );

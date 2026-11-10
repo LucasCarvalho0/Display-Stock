@@ -24,7 +24,13 @@ export const correctionSchema = z.object({ quantity: qty.optional(), type: z.enu
 const shift = z.enum(["MANHA", "NOITE"], { errorMap: () => ({ message: "Turno inválido." }) });
 export const inventoryStartSchema = z.object({ referenceDate: ymd, shift, responsibleId: z.string().min(1, "Responsável é obrigatório.") });
 export const shiftStartSchema = z.object({ shift });
-export const countSchema = z.object({ productId: z.string().min(1), shift, physicalQty: z.coerce.number({ invalid_type_error: "Informe a quantidade física." }).int("Use número inteiro.").min(0, "A quantidade não pode ser negativa.") });
+export const countSchema = z.object({
+  productId: z.string().min(1),
+  shift,
+  physicalQty: z.coerce.number().int().min(0).optional(),
+  warehouseQty: z.coerce.number().int().min(0).optional(),
+  preAssemblyQty: z.coerce.number().int().min(0).optional(),
+});
 export const countItemsQuerySchema = z.object({ shift });
 export const justificationSchema = z.object({ discrepancyId: z.string().min(1), reason: z.enum(["SAIDA_NAO_REGISTRADA", "ENTRADA_NAO_REGISTRADA", "ERRO_LANCAMENTO", "DIVERGENCIA_FISICA", "PECA_DANIFICADA", "PECA_LOCALIZADA", "OUTROS"], { errorMap: () => ({ message: "Selecione o motivo." }) }), text: z.string().trim().min(5, "A justificativa não pode ser vazia (mínimo 5 caracteres).").max(1000) });
 export const approvalSchema = z.object({ discrepancyId: z.string().optional(), decision: z.enum(["APROVADO", "REJEITADO"]), comment: z.string().trim().max(500).optional(), adjust: z.boolean().optional(), adjustJustification: z.string().trim().max(500).optional() });

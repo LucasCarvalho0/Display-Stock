@@ -58,3 +58,4 @@ main().catch((err) => {
   console.error("Erro ao zerar:", err);
   process.exit(1);
 });
+

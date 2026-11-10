@@ -2,7 +2,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { ClipboardCheck } from "lucide-react";
+import { ClipboardCheck, ArrowRight } from "lucide-react";
 import { Badge, Button, Card, ErrorBox, Field, Input, Modal, PageHeader, Select, Spinner, Table } from "@/components/ui";
 import { api, fmtD, today, useFetch } from "@/lib/api";
 import { INV_STATUS } from "@/lib/labels";
@@ -13,17 +13,96 @@ export default function Inventario() {
   const dow = new Date(`${f.referenceDate}T12:00:00`).getDay(); const unusualDay = dow !== 1 && dow !== 5;
   const start = async () => { setBusy(true); setErr(""); try { const r = await api<{ id: string }>("/api/inventory", { method: "POST", json: { ...f, responsibleId: f.responsibleId || me.id } }); router.push(`/inventario/${r.id}`); } catch (e: any) { setErr(e.message); reload(); } finally { setBusy(false); } };
   return <>
-    <PageHeader title="Inventário" subtitle="Primeira versão: somente peças normais. O inventário de NG será uma etapa futura, sem misturar os controles." action={<Button onClick={() => setOpen(true)}><ClipboardCheck className="h-4 w-4" />INICIAR INVENTÁRIO</Button>} />
-    <Card title="Histórico de inventários">{loading ? <Spinner /> : <Table head={["Código", "Data", "Turno inicial", "Responsável", "Divergências", "Status", ""]} empty={data?.length ? undefined : "Nenhum inventário realizado."}>
-      {data?.map((s) => <tr key={s.id}><td className="font-mono text-xs">{s.code}</td><td>{fmtD(s.referenceDate)}</td><td>{s.startShift === "MANHA" ? "Manhã" : "Noite"}</td><td>{s.responsible.name}</td><td>{s._count.discrepancies}</td><td><Badge tone={INV_STATUS[s.status][1]}>{INV_STATUS[s.status][0]}</Badge></td><td><Link className="text-brand hover:underline" href={`/inventario/${s.id}`}>Abrir</Link></td></tr>)}</Table>}</Card>
-    <Modal open={open} onClose={() => setOpen(false)} title="Iniciar inventário">
-      <div className="space-y-3">
-        <Field label="Data"><Input type="date" value={f.referenceDate} onChange={(e) => setF({ ...f, referenceDate: e.target.value })} /></Field>
-        {unusualDay && <p className="rounded bg-amber-50 p-2 text-xs text-amber-800">A rotina prevê inventário às segundas ou sextas-feiras. Você pode prosseguir em outro dia.</p>}
-        <Field label="Turno"><Select value={f.shift} onChange={(e) => setF({ ...f, shift: e.target.value })}><option value="MANHA">Manhã</option><option value="NOITE">Noite</option></Select></Field>
-        <Field label="Responsável"><Select value={f.responsibleId || me?.id || ""} onChange={(e) => setF({ ...f, responsibleId: e.target.value })}>{users?.filter((u) => u.active).map((u) => <option key={u.id} value={u.id}>{u.name}</option>)}</Select></Field>
+    <PageHeader
+      title="Inventário de Displays &amp; Cockpit"
+      subtitle="Controle oficial por turno: Pallets Fechados (Almoxarifado) + Pré-Montagem (Bancada)"
+      action={
+        <Button variant="primary" onClick={() => setOpen(true)} className="py-3 px-5 text-sm font-bold shadow-md">
+          <ClipboardCheck className="h-5 w-5" />
+          INICIAR NOVO INVENTÁRIO
+        </Button>
+      }
+    />
+    <Card title="Histórico de inventários">
+      {loading ? (
+        <Spinner />
+      ) : (
+        <Table
+          head={["Código", "Data", "Turno Inicial", "Responsável", "Divergências", "Status", "Ação"]}
+          empty={data?.length ? undefined : "Nenhum inventário realizado."}
+        >
+          {data?.map((s) => (
+            <tr key={s.id} className="hover:bg-slate-50 transition">
+              <td className="font-mono text-xs font-bold text-navy-900">{s.code}</td>
+              <td>{fmtD(s.referenceDate)}</td>
+              <td>
+                <span className="font-semibold text-xs px-2 py-0.5 rounded bg-slate-100 border border-slate-200">
+                  {s.startShift === "MANHA" ? "Manhã" : "Noite"}
+                </span>
+              </td>
+              <td>{s.responsible.name}</td>
+              <td className="font-bold text-center">
+                {s._count.discrepancies > 0 ? (
+                  <span className="text-red-600 font-mono font-bold bg-red-50 px-2 py-0.5 rounded border border-red-200">
+                    {s._count.discrepancies}
+                  </span>
+                ) : (
+                  <span className="text-emerald-600 font-mono text-xs">0</span>
+                )}
+              </td>
+              <td>
+                <Badge tone={INV_STATUS[s.status][1]}>{INV_STATUS[s.status][0]}</Badge>
+              </td>
+              <td>
+                <Link
+                  className="px-4 py-2 rounded-xl bg-[#1E3F90] hover:bg-blue-800 text-white font-bold text-xs inline-flex items-center gap-1.5 shadow-md hover:shadow-lg active:scale-95 transition min-h-[36px]"
+                  href={`/inventario/${s.id}`}
+                >
+                  <span>Abrir Inventário</span>
+                  <ArrowRight className="h-3.5 w-3.5" />
+                </Link>
+              </td>
+            </tr>
+          ))}
+        </Table>
+      )}
+    </Card>
+    <Modal open={open} onClose={() => setOpen(false)} title="Iniciar Novo Inventário de Turno">
+      <div className="space-y-4">
+        <Field label="Data de Referência">
+          <Input type="date" value={f.referenceDate} onChange={(e) => setF({ ...f, referenceDate: e.target.value })} />
+        </Field>
+        {unusualDay && (
+          <p className="rounded-xl bg-amber-50 border border-amber-200 p-2.5 text-xs text-amber-800">
+            A rotina prevê inventário preferencialmente às segundas ou sextas-feiras. Você pode prosseguir em outro dia normalmente.
+          </p>
+        )}
+        <Field label="Turno Inicial">
+          <Select value={f.shift} onChange={(e) => setF({ ...f, shift: e.target.value })}>
+            <option value="MANHA">Turno 1: Manhã</option>
+            <option value="NOITE">Turno 2: Noite</option>
+          </Select>
+        </Field>
+        <Field label="Responsável pelo Inventário">
+          <Select
+            value={f.responsibleId || me?.id || ""}
+            onChange={(e) => setF({ ...f, responsibleId: e.target.value })}
+          >
+            {users
+              ?.filter((u) => u.active)
+              .map((u) => (
+                <option key={u.id} value={u.id}>
+                  {u.name} ({u.role})
+                </option>
+              ))}
+          </Select>
+        </Field>
         {err && <ErrorBox message={err} />}
-        <Button loading={busy} onClick={start} className="w-full">Confirmar e carregar produtos normais</Button>
-      </div></Modal>
+        <Button variant="success" loading={busy} onClick={start} className="w-full py-3.5 text-base font-bold shadow-md">
+          <ClipboardCheck className="h-5 w-5" />
+          Iniciar Inventário e Abrir Contagem
+        </Button>
+      </div>
+    </Modal>
   </>;
 }

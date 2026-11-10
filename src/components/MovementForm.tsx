@@ -638,28 +638,28 @@ export default function MovementForm({ type }: { type: "ENTRADA" | "SAIDA" }) {
                 <button
                   type="button"
                   onClick={() => addQty(1)}
-                  className="px-2.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-mono font-bold transition"
+                  className="px-3 py-2 bg-blue-50 hover:bg-blue-100 border border-blue-200 text-blue-700 rounded-xl text-xs font-mono font-bold transition shadow-xs active:scale-95"
                 >
                   +1
                 </button>
                 <button
                   type="button"
                   onClick={() => addQty(5)}
-                  className="px-2.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-mono font-bold transition"
+                  className="px-3 py-2 bg-blue-50 hover:bg-blue-100 border border-blue-200 text-blue-700 rounded-xl text-xs font-mono font-bold transition shadow-xs active:scale-95"
                 >
                   +5
                 </button>
                 <button
                   type="button"
                   onClick={() => addQty(10)}
-                  className="px-2.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-mono font-bold transition"
+                  className="px-3 py-2 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 text-indigo-700 rounded-xl text-xs font-mono font-bold transition shadow-xs active:scale-95"
                 >
                   +10
                 </button>
                 <button
                   type="button"
                   onClick={() => addQty(20)}
-                  className="px-2.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-mono font-bold transition"
+                  className="px-3 py-2 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-700 rounded-xl text-xs font-mono font-bold transition shadow-xs active:scale-95"
                 >
                   +20 (Caixa)
                 </button>

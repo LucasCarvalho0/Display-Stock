@@ -8,10 +8,32 @@ export const Card = ({ title, action, children, className = "" }: { title?: Reac
     <div className="p-4">{children}</div>
   </section>
 );
-type BtnProps = ButtonHTMLAttributes<HTMLButtonElement> & { variant?: "primary" | "secondary" | "danger" | "success" | "ghost"; loading?: boolean };
+type BtnProps = ButtonHTMLAttributes<HTMLButtonElement> & {
+  variant?: "primary" | "secondary" | "danger" | "success" | "warning" | "indigo" | "purple" | "sky" | "ghost";
+  loading?: boolean;
+};
 export const Button = ({ variant = "primary", loading, children, className = "", disabled, ...p }: BtnProps) => {
-  const v = { primary: "bg-brand text-white hover:bg-brand-dark", secondary: "border border-slate-300 bg-white text-slate-700 hover:bg-slate-50", danger: "bg-red-600 text-white hover:bg-red-700", success: "bg-emerald-600 text-white hover:bg-emerald-700", ghost: "text-slate-600 hover:bg-slate-100" }[variant];
-  return <button {...p} disabled={disabled || loading} className={`inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-50 ${v} ${className}`}>{loading && <Loader2 className="h-4 w-4 animate-spin" />}{children}</button>;
+  const v = {
+    primary: "bg-[#1E3F90] text-white hover:bg-[#152e6b] shadow-sm active:scale-[0.98]",
+    secondary: "bg-slate-700 text-white hover:bg-slate-800 shadow-sm active:scale-[0.98]",
+    danger: "bg-red-600 text-white hover:bg-red-700 shadow-sm active:scale-[0.98]",
+    success: "bg-emerald-600 text-white hover:bg-emerald-700 shadow-sm active:scale-[0.98]",
+    warning: "bg-amber-500 text-white hover:bg-amber-600 shadow-sm active:scale-[0.98]",
+    indigo: "bg-indigo-600 text-white hover:bg-indigo-700 shadow-sm active:scale-[0.98]",
+    purple: "bg-purple-600 text-white hover:bg-purple-700 shadow-sm active:scale-[0.98]",
+    sky: "bg-sky-600 text-white hover:bg-sky-700 shadow-sm active:scale-[0.98]",
+    ghost: "text-slate-700 bg-slate-100 hover:bg-slate-200 border border-slate-300 active:scale-[0.98]",
+  }[variant];
+  return (
+    <button
+      {...p}
+      disabled={disabled || loading}
+      className={`inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 min-h-[44px] text-sm font-semibold transition-all disabled:cursor-not-allowed disabled:opacity-50 select-none ${v} ${className}`}
+    >
+      {loading && <Loader2 className="h-4 w-4 animate-spin" />}
+      {children}
+    </button>
+  );
 };
 const inputCls = "w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-brand focus:ring-2 focus:ring-brand/20 disabled:bg-slate-100";
 export const Input = forwardRef<HTMLInputElement, InputHTMLAttributes<HTMLInputElement>>(({ className = "", ...p }, ref) => <input ref={ref} {...p} className={`${inputCls} ${className}`} />);
@@ -51,7 +73,7 @@ export const PageHeader = ({ title, subtitle, action }: { title: string; subtitl
 export function Pager({ page, pageSize, total, onChange }: { page: number; pageSize: number; total: number; onChange: (p: number) => void }) {
   const pages = Math.max(1, Math.ceil(total / pageSize));
   return <div className="flex items-center justify-between pt-3 text-sm text-slate-500"><span>{total} registro(s)</span>
-    <div className="flex items-center gap-2"><Button variant="secondary" disabled={page <= 1} onClick={() => onChange(page - 1)}>Anterior</Button><span>{page} / {pages}</span><Button variant="secondary" disabled={page >= pages} onClick={() => onChange(page + 1)}>Próxima</Button></div></div>;
+    <div className="flex items-center gap-2"><Button variant="indigo" disabled={page <= 1} onClick={() => onChange(page - 1)} className="text-xs px-3 py-1.5 min-h-[36px]">Anterior</Button><span className="font-semibold text-slate-700">{page} / {pages}</span><Button variant="indigo" disabled={page >= pages} onClick={() => onChange(page + 1)} className="text-xs px-3 py-1.5 min-h-[36px]">Próxima</Button></div></div>;
 }
 // Toasts
 const ToastCtx = createContext<(m: string, tone?: "ok" | "err") => void>(() => {});

@@ -166,6 +166,8 @@ model Product {
   minStock       Int                    @default(1)
   active         Boolean                @default(true)
   initialBalance Int                    @default(0)
+  initialWarehouse Int                  @default(0)
+  initialPreAssembly Int                @default(0)
   sortOrder      Int                    @default(9999)
   sortNissan     Int?
   sortGeral      Int?
@@ -182,11 +184,13 @@ model Product {
 }
 
 model StockBalance {
-  productId String   @id
-  product   Product  @relation(fields: [productId], references: [id])
-  quantity  Int      @default(0)
-  version   Int      @default(0)
-  updatedAt DateTime @updatedAt
+  productId      String   @id
+  product        Product  @relation(fields: [productId], references: [id])
+  quantity       Int      @default(0)
+  warehouseQty   Int      @default(0)
+  preAssemblyQty Int      @default(0)
+  version        Int      @default(0)
+  updatedAt      DateTime @updatedAt
 }
 
 model Setting {
@@ -205,6 +209,8 @@ model Movement {
   productId     String
   product       Product            @relation(fields: [productId], references: [id])
   quantity      Int
+  location      String             @default("ESTOQUE")
+  kitCode       String?
   note          String?
   source        String             @default("MANUAL")
   occurredAt    DateTime           @default(now())
@@ -269,6 +275,8 @@ model InventoryCount {
   position         Int
   referenceBalance Int
   referenceAt      DateTime
+  warehouseQty     Int?
+  preAssemblyQty   Int?
   physicalQty      Int?
   countedAt        DateTime?
   countedById      String?
