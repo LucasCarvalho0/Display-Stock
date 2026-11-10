@@ -211,64 +211,67 @@ export default function AppShell({ user, children }: { user: U; children: React.
 
         {/* ÁREA PRINCIPAL */}
         <div className="flex min-w-0 flex-1 flex-col">
-          {/* HEADER INDUSTRIAL */}
-          <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-slate-200 bg-white/95 px-3 sm:px-4 md:px-6 backdrop-blur-md">
-            <div className="flex items-center gap-2 sm:gap-3">
+          {/* HEADER INDUSTRIAL RESPONSIVO (OTIMIZADO PARA TABLETS E DESKTOP) */}
+          <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-slate-200 bg-white/95 px-3 sm:px-4 md:px-6 backdrop-blur-md gap-2 sm:gap-4">
+            {/* ESQUERDA: MENU + IDENTIFICAÇÃO DA LINHA */}
+            <div className="flex items-center gap-2 sm:gap-3 min-w-0">
               <button
-                className="lg:hidden p-2 text-slate-700 hover:bg-slate-100 rounded-xl min-w-[44px] min-h-[44px] flex items-center justify-center active:scale-95 transition"
+                className="lg:hidden p-2 text-slate-700 hover:bg-slate-100 rounded-xl min-w-[40px] min-h-[40px] flex items-center justify-center active:scale-95 transition shrink-0"
                 onClick={() => setMobile(true)}
                 aria-label="Abrir menu lateral"
               >
-                <Menu className="h-6 w-6" />
+                <Menu className="h-5 w-5" />
               </button>
 
-              <div className="flex items-center gap-2.5">
+              <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
                 <div className="w-8 h-8 rounded-lg overflow-hidden bg-[#1E3F90] hidden sm:flex items-center justify-center p-0.5 border border-slate-200 shadow-xs shrink-0">
                   <img src="/logo.jpg" alt="Logo Sesé" className="w-full h-full object-contain" />
                 </div>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="font-bold text-sm md:text-base text-navy-900 tracking-tight">
-                      DISPLAY STOCK CONTROL
+                <div className="min-w-0">
+                  <div className="flex items-center gap-1.5 sm:gap-2">
+                    <span className="font-extrabold text-sm sm:text-base text-navy-900 tracking-tight whitespace-nowrap">
+                      DISPLAY STOCK
                     </span>
-                    <span className="bg-slate-100 text-slate-700 font-mono text-[11px] font-bold px-1.5 py-0.5 rounded border border-slate-200">
-                      SESÉ OP
+                    <span className="bg-blue-50 text-[#1E3F90] border border-blue-200 font-mono text-[10px] font-bold px-1.5 py-0.5 rounded whitespace-nowrap shrink-0">
+                      SESÉ
                     </span>
                   </div>
-                  <div className="hidden sm:block text-xs text-slate-500">
-                    Gestão Serializada de Peças Multimídia &amp; Displays · Cockpit 04
+                  <div className="hidden xl:block text-[11px] text-slate-500 whitespace-nowrap truncate">
+                    Gestão de Peças Multimídia &amp; Displays · Cockpit 04
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* TELEMETRIA & USUÁRIO */}
-            <div className="flex items-center gap-3 md:gap-5 text-sm">
-              {/* Relógio BRT */}
-              <div className="hidden md:flex items-center gap-1.5 px-2.5 py-1 bg-slate-50 border border-slate-200 rounded-lg text-xs font-mono text-slate-700">
-                <Clock className="h-3.5 w-3.5 text-slate-400" />
+            {/* DIREITA: TELEMETRIA, ALERTAS E PERFIL */}
+            <div className="flex items-center gap-2 sm:gap-3 md:gap-4 shrink-0 text-sm">
+              {/* Relógio do Sistema (Apenas em telas amplas para não poluir tablets) */}
+              <div className="hidden xl:flex items-center gap-1.5 px-2.5 py-1 bg-slate-50 border border-slate-200 rounded-lg text-xs font-mono text-slate-700 whitespace-nowrap">
+                <Clock className="h-3.5 w-3.5 text-slate-400 shrink-0" />
                 <span suppressHydrationWarning>
-                  {mounted && now ? fmtDT(now) : "BRT Oficial"}
+                  {mounted && now ? fmtDT(now) : "BRT"}
                 </span>
               </div>
 
-              {/* Alerta de divergência em inventário */}
+              {/* Alerta de Divergência em Inventário (Compacto e Responsivo) */}
               {dash?.inventory?.discrepancies > 0 && (
                 <Link
                   href={`/inventario/${dash.inventory.id}`}
-                  className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-red-50 text-red-700 border border-red-200 text-xs font-semibold hover:bg-red-100 transition-colors"
+                  title={`${dash.inventory.discrepancies} divergência(s) encontrada(s)`}
+                  className="flex items-center gap-1.5 px-2 sm:px-2.5 py-1 rounded-lg bg-red-50 text-red-700 border border-red-200 text-xs font-bold hover:bg-red-100 transition-colors whitespace-nowrap shrink-0"
                 >
-                  <AlertTriangle className="h-3.5 w-3.5" />
-                  <span>{dash.inventory.discrepancies} Divergência(s)</span>
+                  <AlertTriangle className="h-3.5 w-3.5 text-red-600 shrink-0" />
+                  <span>{dash.inventory.discrepancies}</span>
+                  <span className="hidden sm:inline">Divergência{dash.inventory.discrepancies > 1 ? "s" : ""}</span>
                 </Link>
               )}
 
-              {/* Notificações */}
+              {/* Notificações Operacionais */}
               <div className="relative">
                 <button
                   onClick={() => setBellOpen(!bellOpen)}
                   aria-label="Notificações operacionais"
-                  className="relative p-2 text-slate-600 hover:bg-slate-100 rounded-lg transition"
+                  className="relative p-2 text-slate-600 hover:bg-slate-100 rounded-xl transition min-w-[36px] min-h-[36px] flex items-center justify-center shrink-0"
                 >
                   <Bell className="h-5 w-5" />
                   {alerts.length > 0 && (
@@ -277,7 +280,7 @@ export default function AppShell({ user, children }: { user: U; children: React.
                 </button>
 
                 {bellOpen && (
-                  <div className="absolute right-0 z-50 mt-2 w-80 rounded-xl border border-slate-200 bg-white p-4 shadow-xl">
+                  <div className="absolute right-0 z-50 mt-2 w-72 sm:w-80 rounded-xl border border-slate-200 bg-white p-4 shadow-xl">
                     <div className="flex items-center justify-between pb-2 border-b border-slate-100 mb-2">
                       <span className="text-xs font-bold text-navy-900 uppercase tracking-wider">
                         Alertas Operacionais
@@ -308,48 +311,46 @@ export default function AppShell({ user, children }: { user: U; children: React.
                 )}
               </div>
 
-              {/* Divisor */}
-              <div className="h-6 w-px bg-slate-200" />
+              {/* Divisor Visual */}
+              <div className="h-5 w-px bg-slate-200 hidden sm:block shrink-0" />
 
               {/* Usuário Logado */}
-              <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-full bg-navy-900 text-white flex items-center justify-center font-semibold text-xs shrink-0">
+              <div className="flex items-center gap-2 shrink-0">
+                <div
+                  title={user.name}
+                  className="w-8 h-8 rounded-full bg-[#1E3F90] text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-xs ring-2 ring-blue-100"
+                >
                   {user.name.charAt(0).toUpperCase()}
                 </div>
-                <div className="hidden sm:block text-right leading-tight">
-                  <div className="font-semibold text-navy-900 text-xs flex items-center justify-end gap-1.5">
-                    <span>{user.name}</span>
+                <div className="hidden md:block text-right leading-tight max-w-[120px] lg:max-w-[160px]">
+                  <div className="font-semibold text-navy-900 text-xs flex items-center justify-end gap-1 truncate">
+                    <span className="truncate">{user.name.split(" ")[0]}</span>
                     {user.shift === "MANHA" ? (
-                      <span className="px-1.5 py-0.2 rounded text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-200">
+                      <span className="px-1 py-0.2 rounded text-[9px] font-bold bg-amber-100 text-amber-800 border border-amber-200 shrink-0">
                         1T
                       </span>
                     ) : user.shift === "NOITE" ? (
-                      <span className="px-1.5 py-0.2 rounded text-[10px] font-bold bg-indigo-100 text-indigo-800 border border-indigo-200">
+                      <span className="px-1 py-0.2 rounded text-[9px] font-bold bg-indigo-100 text-indigo-800 border border-indigo-200 shrink-0">
                         2T
                       </span>
                     ) : (
-                      <span className="px-1.5 py-0.2 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                      <span className="px-1 py-0.2 rounded text-[9px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200 shrink-0">
                         Geral
                       </span>
                     )}
                   </div>
-                  <div className="text-[11px] text-slate-500 font-medium">
-                    {user.role} ·{" "}
-                    {user.shift === "MANHA"
-                      ? "1º Turno (Manhã)"
-                      : user.shift === "NOITE"
-                      ? "2º Turno (Noite)"
-                      : "Geral (1T & 2T)"}
+                  <div className="text-[10px] text-slate-400 font-medium truncate">
+                    {user.role}
                   </div>
                 </div>
               </div>
 
-              {/* Sair */}
+              {/* Botão Sair */}
               <button
                 onClick={logout}
                 title="Sair do sistema"
                 aria-label="Sair do sistema"
-                className="p-2 text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition"
+                className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition min-w-[36px] min-h-[36px] flex items-center justify-center shrink-0"
               >
                 <LogOut className="h-4 w-4" />
               </button>
