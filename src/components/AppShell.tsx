@@ -25,6 +25,7 @@ import {
   ShieldCheck,
   User,
   Users,
+  X,
 } from "lucide-react";
 import { ToastProvider } from "./ui";
 import { api, fmtDT, useFetch } from "@/lib/api";
@@ -88,9 +89,7 @@ export default function AppShell({ user, children }: { user: U; children: React.
         {/* SIDEBAR */}
         <aside
           className={`${
-            mobile ? "fixed inset-y-0 left-0 z-50 flex shadow-2xl" : "hidden md:flex"
-          } ${
-            collapsed ? "w-20" : "w-64"
+            mobile ? "fixed inset-y-0 left-0 z-50 flex shadow-2xl w-72" : "hidden lg:flex " + (collapsed ? "w-20" : "w-64")
           } flex-col bg-navy-900 text-slate-300 transition-all duration-200 border-r border-navy-800`}
         >
           {/* Topo do Menu */}
@@ -99,21 +98,32 @@ export default function AppShell({ user, children }: { user: U; children: React.
               <div className="w-8 h-8 rounded-lg overflow-hidden bg-[#1E3F90] flex items-center justify-center shrink-0 border border-white/10 p-0.5 shadow-sm">
                 <img src="/logo.jpg" alt="Logo Sesé" className="w-full h-full object-contain" />
               </div>
-              {!collapsed && (
+              {(!collapsed || mobile) && (
                 <div className="leading-tight">
                   <div className="text-sm font-bold text-white tracking-tight">DISPLAY STOCK</div>
                   <div className="text-[10px] text-sky-400 font-medium">SESÉ LOGISTICS</div>
                 </div>
               )}
             </div>
-            <button
-              onClick={() => setCollapsed(!collapsed)}
-              className="hidden md:flex p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-white/10"
-              title={collapsed ? "Expandir menu" : "Recolher menu"}
-              aria-label="Alternar menu lateral"
-            >
-              {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
-            </button>
+            {mobile ? (
+              <button
+                onClick={() => setMobile(false)}
+                className="p-2 rounded-xl text-slate-300 hover:text-white hover:bg-white/10 min-w-[40px] min-h-[40px] flex items-center justify-center"
+                title="Fechar menu"
+                aria-label="Fechar menu lateral"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            ) : (
+              <button
+                onClick={() => setCollapsed(!collapsed)}
+                className="hidden lg:flex p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-white/10"
+                title={collapsed ? "Expandir menu" : "Recolher menu"}
+                aria-label="Alternar menu lateral"
+              >
+                {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
+              </button>
+            )}
           </div>
 
           {/* Navegação */}
@@ -194,7 +204,7 @@ export default function AppShell({ user, children }: { user: U; children: React.
 
         {mobile && (
           <div
-            className="fixed inset-0 z-40 bg-black/50 md:hidden backdrop-blur-xs"
+            className="fixed inset-0 z-40 bg-black/50 lg:hidden backdrop-blur-xs"
             onClick={() => setMobile(false)}
           />
         )}
@@ -202,14 +212,14 @@ export default function AppShell({ user, children }: { user: U; children: React.
         {/* ÁREA PRINCIPAL */}
         <div className="flex min-w-0 flex-1 flex-col">
           {/* HEADER INDUSTRIAL */}
-          <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-slate-200 bg-white/95 px-4 md:px-6 backdrop-blur-md">
-            <div className="flex items-center gap-3">
+          <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-slate-200 bg-white/95 px-3 sm:px-4 md:px-6 backdrop-blur-md">
+            <div className="flex items-center gap-2 sm:gap-3">
               <button
-                className="md:hidden p-1.5 text-slate-600 hover:bg-slate-100 rounded-lg"
+                className="lg:hidden p-2 text-slate-700 hover:bg-slate-100 rounded-xl min-w-[44px] min-h-[44px] flex items-center justify-center active:scale-95 transition"
                 onClick={() => setMobile(true)}
                 aria-label="Abrir menu lateral"
               >
-                <Menu className="h-5 w-5" />
+                <Menu className="h-6 w-6" />
               </button>
 
               <div className="flex items-center gap-2.5">
@@ -347,7 +357,7 @@ export default function AppShell({ user, children }: { user: U; children: React.
           </header>
 
           {/* CONTEÚDO PRINCIPAL */}
-          <main className="flex-1 p-4 md:p-6 lg:p-8 max-w-7xl w-full mx-auto">{children}</main>
+          <main className="flex-1 p-3 sm:p-5 md:p-6 lg:p-8 max-w-7xl w-full mx-auto">{children}</main>
         </div>
       </div>
     </ToastProvider>

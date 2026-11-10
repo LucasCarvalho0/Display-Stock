@@ -242,7 +242,7 @@ function Count({ inv, reload, can }: { inv: any; reload: () => void; can: boolea
   return (
     <div className="space-y-6">
       {/* SELETOR DE ETAPAS DO INVENTÁRIO (GRANDE E COLORIDO PARA TABLET) */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-3">
         <button
           type="button"
           onClick={() => setStage(1)}
@@ -401,18 +401,18 @@ function Count({ inv, reload, can }: { inv: any; reload: () => void; can: boolea
                 </div>
 
                 {/* INPUT COM CONTROLES + / - */}
-                <div className="flex items-center justify-center gap-3 max-w-xl mx-auto">
+                <div className="flex items-center justify-center gap-2 sm:gap-3 max-w-xl mx-auto">
                   <button
                     type="button"
                     onClick={() => addQuick(-10)}
-                    className="w-14 h-14 md:w-16 md:h-16 rounded-2xl bg-white border-2 border-slate-300 hover:border-slate-400 active:scale-95 text-slate-700 font-bold text-lg flex items-center justify-center shadow-sm"
+                    className="w-12 h-12 sm:w-16 sm:h-16 shrink-0 rounded-2xl bg-white border-2 border-slate-300 hover:border-slate-400 active:scale-95 text-slate-700 font-bold text-base sm:text-lg flex items-center justify-center shadow-sm"
                   >
                     -10
                   </button>
                   <button
                     type="button"
                     onClick={() => addQuick(-1)}
-                    className="w-14 h-14 md:w-16 md:h-16 rounded-2xl bg-white border-2 border-slate-300 hover:border-slate-400 active:scale-95 text-slate-700 font-bold text-xl flex items-center justify-center shadow-sm"
+                    className="w-12 h-12 sm:w-16 sm:h-16 shrink-0 rounded-2xl bg-white border-2 border-slate-300 hover:border-slate-400 active:scale-95 text-slate-700 font-bold text-xl flex items-center justify-center shadow-sm"
                   >
                     <Minus className="h-6 w-6" />
                   </button>
@@ -429,20 +429,20 @@ function Count({ inv, reload, can }: { inv: any; reload: () => void; can: boolea
                       else setPreAssemblyVal(e.target.value);
                     }}
                     onKeyDown={(e) => e.key === "Enter" && can && handleConfirm()}
-                    className="w-40 sm:w-56 h-16 md:h-20 text-center font-mono text-3xl md:text-4xl font-extrabold bg-white border-2 border-brand rounded-2xl shadow-inner focus:outline-none focus:ring-4 focus:ring-brand/20 text-navy-900"
+                    className="w-36 sm:w-56 h-14 sm:h-20 text-center font-mono text-3xl sm:text-4xl font-extrabold bg-white border-2 border-brand rounded-2xl shadow-inner focus:outline-none focus:ring-4 focus:ring-brand/20 text-navy-900"
                   />
 
                   <button
                     type="button"
                     onClick={() => addQuick(1)}
-                    className="w-14 h-14 md:w-16 md:h-16 rounded-2xl bg-white border-2 border-slate-300 hover:border-slate-400 active:scale-95 text-slate-700 font-bold text-xl flex items-center justify-center shadow-sm"
+                    className="w-12 h-12 sm:w-16 sm:h-16 shrink-0 rounded-2xl bg-white border-2 border-slate-300 hover:border-slate-400 active:scale-95 text-slate-700 font-bold text-xl flex items-center justify-center shadow-sm"
                   >
                     <Plus className="h-6 w-6" />
                   </button>
                   <button
                     type="button"
                     onClick={() => addQuick(10)}
-                    className="w-14 h-14 md:w-16 md:h-16 rounded-2xl bg-white border-2 border-slate-300 hover:border-slate-400 active:scale-95 text-slate-700 font-bold text-lg flex items-center justify-center shadow-sm"
+                    className="w-12 h-12 sm:w-16 sm:h-16 shrink-0 rounded-2xl bg-white border-2 border-slate-300 hover:border-slate-400 active:scale-95 text-slate-700 font-bold text-base sm:text-lg flex items-center justify-center shadow-sm"
                   >
                     +10
                   </button>
@@ -456,7 +456,7 @@ function Count({ inv, reload, can }: { inv: any; reload: () => void; can: boolea
                       if (stage === 1) setWarehouseVal("0");
                       else setPreAssemblyVal("0");
                     }}
-                    className="px-3.5 py-2 rounded-xl bg-slate-200 hover:bg-slate-300 font-semibold text-xs text-slate-700 active:scale-95"
+                    className="px-4 py-2.5 min-h-[44px] rounded-xl bg-slate-200 hover:bg-slate-300 font-bold text-xs text-slate-800 active:scale-95 shadow-xs"
                   >
                     Zerar (0)
                   </button>
@@ -465,7 +465,7 @@ function Count({ inv, reload, can }: { inv: any; reload: () => void; can: boolea
                       key={num}
                       type="button"
                       onClick={() => addQuick(num)}
-                      className="px-3.5 py-2 rounded-xl bg-blue-50 border border-blue-200 text-blue-700 hover:bg-blue-100 font-bold text-xs active:scale-95"
+                      className="px-4 py-2.5 min-h-[44px] rounded-xl bg-blue-50 border border-blue-200 text-blue-700 hover:bg-blue-100 font-bold text-xs active:scale-95 shadow-xs"
                     >
                       +{num}
                     </button>

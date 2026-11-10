@@ -35,7 +35,7 @@ export const Button = ({ variant = "primary", loading, children, className = "",
     </button>
   );
 };
-const inputCls = "w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-brand focus:ring-2 focus:ring-brand/20 disabled:bg-slate-100";
+const inputCls = "w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-base sm:text-sm outline-none focus:border-brand focus:ring-2 focus:ring-brand/20 disabled:bg-slate-100 min-h-[44px]";
 export const Input = forwardRef<HTMLInputElement, InputHTMLAttributes<HTMLInputElement>>(({ className = "", ...p }, ref) => <input ref={ref} {...p} className={`${inputCls} ${className}`} />);
 Input.displayName = "Input";
 export const Select = forwardRef<HTMLSelectElement, React.SelectHTMLAttributes<HTMLSelectElement>>(({ className = "", ...p }, ref) => <select ref={ref} {...p} className={`${inputCls} ${className}`} />);
@@ -43,29 +43,29 @@ Select.displayName = "Select";
 export const Textarea = forwardRef<HTMLTextAreaElement, React.TextareaHTMLAttributes<HTMLTextAreaElement>>(({ className = "", ...p }, ref) => <textarea ref={ref} {...p} className={`${inputCls} ${className}`} />);
 Textarea.displayName = "Textarea";
 export const Field = ({ label, error, hint, children }: { label: string; error?: string; hint?: string; children: ReactNode }) => (
-  <label className="block"><span className="mb-1 block text-xs font-medium text-slate-600">{label}</span>{children}{hint && !error && <span className="mt-1 block text-xs text-slate-400">{hint}</span>}{error && <span className="mt-1 block text-xs text-red-600">{error}</span>}</label>
+  <label className="block"><span className="mb-1 block text-xs font-semibold text-slate-700">{label}</span>{children}{hint && !error && <span className="mt-1 block text-xs text-slate-400">{hint}</span>}{error && <span className="mt-1 block text-xs text-red-600 font-medium">{error}</span>}</label>
 );
 const tones = { gray: "bg-slate-100 text-slate-700", green: "bg-emerald-100 text-emerald-800", red: "bg-red-100 text-red-800", yellow: "bg-amber-100 text-amber-800", blue: "bg-blue-100 text-blue-800" };
 export type Tone = keyof typeof tones;
-export const Badge = ({ tone = "gray", children }: { tone?: Tone; children: ReactNode }) => <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${tones[tone]}`}>{children}</span>;
+export const Badge = ({ tone = "gray", children }: { tone?: Tone; children: ReactNode }) => <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${tones[tone]}`}>{children}</span>;
 export const StatCard = ({ label, value, icon, tone = "blue" }: { label: string; value: ReactNode; icon: ReactNode; tone?: Tone }) => (
-  <div className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-    <div className={`rounded-lg p-2.5 ${tones[tone]}`}>{icon}</div>
-    <div><div className="text-2xl font-semibold text-navy-900">{value}</div><div className="text-xs text-slate-500">{label}</div></div>
+  <div className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+    <div className={`rounded-xl p-2.5 ${tones[tone]}`}>{icon}</div>
+    <div><div className="text-2xl font-bold text-navy-900">{value}</div><div className="text-xs text-slate-500 font-medium">{label}</div></div>
   </div>
 );
 export const Table = ({ head, children, empty }: { head: ReactNode[]; children: ReactNode; empty?: string }) => (
-  <div className="overflow-x-auto"><table className="w-full text-left text-sm"><thead className="border-b border-slate-200 text-xs uppercase text-slate-500"><tr>{head.map((h, i) => <th key={i} className="px-3 py-2 font-medium">{h}</th>)}</tr></thead>
-    <tbody className="divide-y divide-slate-100 [&_td]:px-3 [&_td]:py-2">{children}</tbody></table>{empty && <p className="py-8 text-center text-sm text-slate-400">{empty}</p>}</div>
+  <div className="overflow-x-auto -mx-1 sm:mx-0"><table className="w-full text-left text-sm whitespace-nowrap lg:whitespace-normal"><thead className="border-b border-slate-200 text-xs uppercase text-slate-500 bg-slate-50/50"><tr>{head.map((h, i) => <th key={i} className="px-3.5 py-3 font-semibold">{h}</th>)}</tr></thead>
+    <tbody className="divide-y divide-slate-100 [&_td]:px-3.5 [&_td]:py-3 font-medium">{children}</tbody></table>{empty && <p className="py-8 text-center text-sm text-slate-400">{empty}</p>}</div>
 );
 export const Spinner = () => <div className="flex justify-center py-10"><Loader2 className="h-6 w-6 animate-spin text-brand" /></div>;
-export const ErrorBox = ({ message }: { message: string }) => <div role="alert" className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{message}</div>;
+export const ErrorBox = ({ message }: { message: string }) => <div role="alert" className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 font-medium">{message}</div>;
 export function Modal({ open, onClose, title, children, wide }: { open: boolean; onClose: () => void; title: string; children: ReactNode; wide?: boolean }) {
   if (!open) return null;
-  return <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-slate-900/50 p-4" onClick={onClose}>
-    <div className={`mt-10 w-full rounded-xl bg-white shadow-xl ${wide ? "max-w-4xl" : "max-w-lg"}`} onClick={(e) => e.stopPropagation()}>
-      <div className="flex items-center justify-between border-b px-4 py-3"><h3 className="font-semibold text-navy-900">{title}</h3><button onClick={onClose} aria-label="Fechar"><X className="h-5 w-5 text-slate-400" /></button></div>
-      <div className="p-4">{children}</div></div></div>;
+  return <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-slate-900/60 p-3 sm:p-4 backdrop-blur-xs" onClick={onClose}>
+    <div className={`w-full rounded-2xl bg-white shadow-2xl flex flex-col max-h-[92vh] overflow-hidden ${wide ? "max-w-4xl" : "max-w-lg"}`} onClick={(e) => e.stopPropagation()}>
+      <div className="flex items-center justify-between border-b px-5 py-3.5 shrink-0 bg-slate-50/50"><h3 className="font-bold text-base text-navy-900">{title}</h3><button onClick={onClose} aria-label="Fechar" className="p-2 -mr-2 text-slate-400 hover:text-slate-700 rounded-xl hover:bg-slate-100 min-w-[40px] min-h-[40px] flex items-center justify-center transition"><X className="h-5 w-5" /></button></div>
+      <div className="p-5 overflow-y-auto flex-1">{children}</div></div></div>;
 }
 export const PageHeader = ({ title, subtitle, action }: { title: string; subtitle?: string; action?: ReactNode }) => (
   <div className="mb-5 flex flex-wrap items-end justify-between gap-3"><div><h1 className="text-xl font-semibold text-navy-900">{title}</h1>{subtitle && <p className="text-sm text-slate-500">{subtitle}</p>}</div>{action}</div>

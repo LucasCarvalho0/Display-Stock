@@ -1,3 +1,48 @@
-@tailwind base; @tailwind components; @tailwind utilities;
-:root { color-scheme: light; }
-body { @apply bg-slate-50 text-slate-800 antialiased; font-family: Inter, ui-sans-serif, system-ui, "Segoe UI", Roboto, sans-serif; }
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+}
+
+html,
+body {
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  overscroll-behavior-y: none;
+}
+
+body {
+  @apply bg-slate-50 text-slate-800 antialiased;
+  font-family: Inter, ui-sans-serif, system-ui, "Segoe UI", Roboto, sans-serif;
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  padding-left: env(safe-area-inset-left, 0px);
+  padding-right: env(safe-area-inset-right, 0px);
+}
+
+/* Otimização especial para Tablets (Samsung Galaxy Tab e Android) */
+@media (max-width: 1024px) {
+  /* Evita auto-zoom indesejado do Samsung Internet / Chrome ao tocar em inputs */
+  input,
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+}
+
+/* Rolagem tátil e suave para tabelas em tablets */
+.overflow-x-auto {
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+}
+
+/* Previne seleção acidental de texto durante cliques rápidos nos tablets */
+button,
+[role="button"],
+a {
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
+}

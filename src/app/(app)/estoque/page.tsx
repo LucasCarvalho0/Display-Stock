@@ -240,12 +240,12 @@ export default function EstoquePage() {
 
       {/* TABELA DE ESTOQUE COM FILTROS AVANÇADOS */}
       <Card>
-        <div className="mb-4 grid gap-2.5 sm:grid-cols-2 lg:grid-cols-5">
-          <div className="relative lg:col-span-2">
-            <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+        <div className="mb-4 grid gap-2.5 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
+          <div className="relative sm:col-span-2 md:col-span-1 lg:col-span-2">
+            <Search className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
             <Input
               className="pl-9"
-              placeholder="Pesquisar código, descrição, modelo ou cliente..."
+              placeholder="Pesquisar código, descrição, modelo..."
               value={filters.q}
               onChange={(e) => setField("q", e.target.value)}
             />
@@ -298,8 +298,8 @@ export default function EstoquePage() {
         ) : (
           data && (
             <>
-              <div className="overflow-x-auto border border-slate-200 rounded-lg">
-                <table className="w-full text-left text-xs border-collapse">
+              <div className="overflow-x-auto border border-slate-200 rounded-2xl shadow-xs">
+                <table className="w-full min-w-[980px] text-left text-xs border-collapse">
                   <thead className="bg-[#1E3F90] text-white uppercase text-[11px] tracking-wider">
                     <tr>
                       <th className="py-2.5 px-3">
