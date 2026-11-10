@@ -29,8 +29,9 @@ export async function startInventory(i: { referenceDate: string; shift: Shift; r
   return transaction(async (tx) => {
     const resp = await tx.user.findFirst({ where: { id: i.responsibleId, active: true } });
     if (!resp) throw badRequest("Responsável inválido.");
+    // Bloqueia apenas se já existe inventário ABERTO para a mesma data E mesmo turno inicial
     const open = await tx.inventorySession.findFirst({ where: { referenceDate: dateOnly(i.referenceDate), classification: CLASSIFICATION_V1, status: { not: "FECHADO" } } });
-    if (open) throw conflict("INVENTARIO_ABERTO", `Já existe o inventário ${open.code} em andamento para esta data.`, { id: open.id });
+    if (open) throw conflict("INVENTARIO_ABERTO", `Já existe o inventário ${open.code} em andamento. Feche-o antes de iniciar um novo para a mesma data.`, { id: open.id });
     const code = await nextCode(tx, Number(i.referenceDate.slice(0, 4)));
     const s = await tx.inventorySession.create({ data: {
       code, referenceDate: dateOnly(i.referenceDate), startShift: i.shift, classification: CLASSIFICATION_V1,

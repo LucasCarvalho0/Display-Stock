@@ -57,19 +57,21 @@ export default function InventarioDetalhe() {
   if (!inv || !me) return <Spinner />;
 
   const [label, tone] = INV_STATUS[inv.status] ?? ["Em andamento", "yellow"];
-  const has = (p: string) => me.permissions.includes(p);
+  const has = (p: string) => (me?.permissions ?? []).includes(p);
+  const discrepanciesList: any[] = inv.discrepancies ?? [];
+  const blockersList: string[] = inv.blockers ?? [];
   const tabs: [Tab, string, string][] = [
     ["contagem", "1. Contagem em 2 Etapas", "bg-blue-600"],
     ["comparacao", "2. Comparação Automática", "bg-indigo-600"],
-    ["divergencias", `3. Divergências (${inv.discrepancies.length})`, "bg-amber-600"],
+    [`divergencias`, `3. Divergências (${discrepanciesList.length})`, "bg-amber-600"],
     ["fechamento", "4. Aprovação e Fechamento", "bg-emerald-600"],
-  ];
+  ] as [Tab, string, string][];
 
   return (
     <>
       <PageHeader
         title={`Inventário Industrial ${inv.code}`}
-        subtitle={`${fmtD(inv.referenceDate)} · Responsável: ${inv.responsible.name} · Planta Resende (Cockpit)`}
+        subtitle={`${fmtD(inv.referenceDate)} · Responsável: ${inv.responsible?.name ?? "—"} · Planta Resende (Cockpit)`}
         action={<Badge tone={tone}>{label}</Badge>}
       />
 
@@ -94,7 +96,7 @@ export default function InventarioDetalhe() {
       {tab === "comparacao" && <Compare id={id} inv={inv} />}
       {tab === "divergencias" && (
         <Discrepancies
-          inv={inv}
+          inv={{ ...inv, discrepancies: inv.discrepancies ?? [], blockers: inv.blockers ?? [] }}
           reload={reload}
           can={has("inventory.count")}
           canApprove={has("inventory.approve")}
@@ -103,7 +105,7 @@ export default function InventarioDetalhe() {
       )}
       {tab === "fechamento" && (
         <Closing
-          inv={inv}
+          inv={{ ...inv, discrepancies: inv.discrepancies ?? [], blockers: inv.blockers ?? [] }}
           reload={reload}
           canApprove={has("inventory.approve")}
           canClose={has("inventory.close")}
@@ -679,9 +681,12 @@ function Count({ inv, reload, can }: { inv: any; reload: () => void; can: boolea
 }
 
 function Compare({ id, inv }: { id: string; inv: any }) {
-  const { data, loading } = useFetch<any>(`/api/inventory/${id}/compare`);
+  const { data, loading, error } = useFetch<any>(`/api/inventory/${id}/compare`);
   const [open, setOpen] = useState<string | null>(null);
   if (loading || !data) return <Spinner />;
+  if (error) return <ErrorBox message={error} />;
+
+  const rows: any[] = data?.rows ?? [];
 
   const cell = (d: any) =>
     !d ? (
@@ -716,7 +721,7 @@ function Compare({ id, inv }: { id: string; inv: any }) {
           "Situação",
         ]}
       >
-        {data.rows.flatMap((r: any) => [
+        {rows.flatMap((r: any) => [
           <tr
             key={r.productId}
             onClick={() => setOpen(open === r.productId ? null : r.productId)}
@@ -839,6 +844,7 @@ function Discrepancies({
     }
   };
   const closed = inv.status === "FECHADO";
+  const discrepanciesList: any[] = inv.discrepancies ?? [];
   const ST: Record<string, ["red" | "yellow" | "green" | "gray", string]> = {
     ABERTA: ["red", "Sem justificativa"],
     JUSTIFICADA: ["yellow", "Aguardando análise"],
@@ -846,7 +852,7 @@ function Discrepancies({
     REJEITADA: ["red", "Rejeitada"],
   };
 
-  if (!inv.discrepancies.length)
+  if (!discrepanciesList.length)
     return (
       <Card>
         <p className="text-sm text-slate-500">
@@ -859,7 +865,7 @@ function Discrepancies({
 
   return (
     <div className="space-y-4">
-      {inv.discrepancies.map((d: any) => {
+      {discrepanciesList.map((d: any) => {
         const f = form[d.id] ?? {};
         const [tone, label] = ST[d.status];
         return (
@@ -1040,6 +1046,7 @@ function Closing({
     "Fechamento",
   ];
 
+  const blockersList: string[] = inv.blockers ?? [];
   return (
     <Card title="Aprovação e Fechamento Operacional">
       <ol className="mb-4 flex flex-wrap gap-2 text-xs">
@@ -1055,14 +1062,14 @@ function Closing({
         </p>
       ) : (
         <>
-          {inv.blockers.length > 0 ? (
+          {blockersList.length > 0 ? (
             <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 p-4">
               <p className="mb-1 text-sm font-bold text-amber-950 flex items-center gap-2">
                 <AlertTriangle className="h-4 w-4 text-amber-600" />
                 Pendências antes do fechamento:
               </p>
               <ul className="list-disc pl-5 text-sm text-amber-900 space-y-1">
-                {inv.blockers.map((b: string) => (
+                {blockersList.map((b: string) => (
                   <li key={b}>{b}</li>
                 ))}
               </ul>
@@ -1089,7 +1096,7 @@ function Closing({
             {canClose && (
               <Button
                 variant="success"
-                disabled={inv.blockers.length > 0}
+                disabled={blockersList.length > 0}
                 onClick={() => call("close")}
                 className="shadow-md"
               >

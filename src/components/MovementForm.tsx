@@ -323,8 +323,8 @@ export default function MovementForm({ type }: { type: "ENTRADA" | "SAIDA" }) {
             </div>
           </div>
           <Button
-            variant="secondary"
-            className="text-xs"
+            variant="success"
+            className="text-xs shadow-sm font-bold"
             onClick={() => setSuccessResult(null)}
           >
             OK
