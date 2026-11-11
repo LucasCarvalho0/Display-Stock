@@ -18,9 +18,16 @@ export async function getDashboard() {
   ]);
 
   const cards = {
-    totalProducts: products.length, totalPieces: sum(products), entriesToday: inToday._sum.quantity ?? 0, exitsToday: outToday._sum.quantity ?? 0,
-    normalPieces: sum(normal), ngPieces: sum(ng),
-    belowMin: products.filter((p) => qty(p) > 0 && qty(p) <= p.minStock).length, outOfStock: products.filter((p) => qty(p) <= 0).length,
+    totalProducts: products.length,
+    totalPieces: sum(products),
+    entriesToday: inToday._sum.quantity ?? 0,
+    exitsToday: outToday._sum.quantity ?? 0,
+    normalPieces: sum(normal),
+    ngPieces: sum(ng),
+    warehousePieces: products.reduce((s, p) => s + (p.balance?.warehouseQty ?? 0), 0),
+    preAssemblyPieces: products.reduce((s, p) => s + (p.balance?.preAssemblyQty ?? 0), 0),
+    belowMin: products.filter((p) => qty(p) > 0 && qty(p) <= p.minStock).length,
+    outOfStock: products.filter((p) => qty(p) <= 0).length,
   };
 
   // Entradas × saídas dos últimos 12 meses (mesmo critério do Aux_Dashboard da planilha)
@@ -55,6 +62,19 @@ export async function getDashboard() {
       topProducts: [...products].sort((a, b) => qty(b) - qty(a)).slice(0, 10).map((p) => ({ code: p.code, description: p.description, saldo: qty(p) })),
     },
     recentMovements: recent.map((m) => ({ id: m.id, number: m.number, type: m.type, code: m.product.code, quantity: m.quantity, user: m.createdBy.name, occurredAt: m.occurredAt })),
+    cockpitItems: products.map((p) => ({
+      id: p.id,
+      code: p.code,
+      description: p.description,
+      model: p.model,
+      client: p.client.name,
+      classification: p.classification,
+      minStock: p.minStock,
+      warehouseQty: p.balance?.warehouseQty ?? 0,
+      preAssemblyQty: p.balance?.preAssemblyQty ?? 0,
+      totalQty: p.balance?.quantity ?? 0,
+      status: (p.balance?.quantity ?? 0) <= 0 ? "ZERADO" : (p.balance?.quantity ?? 0) <= p.minStock ? "ABAIXO_MINIMO" : "OK",
+    })),
     inventory: await inventoryPanel(),
   };
 }
