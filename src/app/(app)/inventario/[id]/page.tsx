@@ -21,6 +21,7 @@ import {
   Badge,
   Button,
   Card,
+  ErrorBoundary,
   ErrorBox,
   Field,
   Input,
@@ -68,7 +69,7 @@ export default function InventarioDetalhe() {
   ] as [Tab, string, string][];
 
   return (
-    <>
+    <ErrorBoundary>
       <PageHeader
         title={`Inventário Industrial ${inv.code}`}
         subtitle={`${fmtD(inv.referenceDate)} · Responsável: ${inv.responsible?.name ?? "—"} · Planta Resende (Cockpit)`}
@@ -111,7 +112,7 @@ export default function InventarioDetalhe() {
           canClose={has("inventory.close")}
         />
       )}
-    </>
+    </ErrorBoundary>
   );
 }
 

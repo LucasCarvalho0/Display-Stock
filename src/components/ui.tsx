@@ -1,6 +1,6 @@
 "use client";
 import { Loader2, X } from "lucide-react";
-import { createContext, useCallback, useContext, useState, ReactNode, ButtonHTMLAttributes, InputHTMLAttributes, forwardRef } from "react";
+import { createContext, useCallback, useContext, useState, ReactNode, ButtonHTMLAttributes, InputHTMLAttributes, forwardRef, Component, ErrorInfo } from "react";
 
 export const Card = ({ title, action, children, className = "" }: { title?: ReactNode; action?: ReactNode; children: ReactNode; className?: string }) => (
   <section className={`rounded-xl border border-slate-200 bg-white shadow-sm ${className}`}>
@@ -75,6 +75,44 @@ export function Pager({ page, pageSize, total, onChange }: { page: number; pageS
   return <div className="flex items-center justify-between pt-3 text-sm text-slate-500"><span>{total} registro(s)</span>
     <div className="flex items-center gap-2"><Button variant="indigo" disabled={page <= 1} onClick={() => onChange(page - 1)} className="text-xs px-3 py-1.5 min-h-[36px]">Anterior</Button><span className="font-semibold text-slate-700">{page} / {pages}</span><Button variant="indigo" disabled={page >= pages} onClick={() => onChange(page + 1)} className="text-xs px-3 py-1.5 min-h-[36px]">Próxima</Button></div></div>;
 }
+export class ErrorBoundary extends Component<{ children: ReactNode; fallback?: ReactNode }, { hasError: boolean; error: Error | null }> {
+  constructor(props: { children: ReactNode; fallback?: ReactNode }) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+  static getDerivedStateFromError(error: Error) {
+    return { hasError: true, error };
+  }
+  componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+    console.error("[ErrorBoundary] Erro capturado no componente:", error, errorInfo);
+  }
+  render() {
+    if (this.state.hasError) {
+      if (this.props.fallback) return this.props.fallback;
+      return (
+        <div className="p-6 rounded-2xl bg-rose-50 border-2 border-rose-200 text-rose-950 space-y-3 m-4">
+          <div className="flex items-center gap-2 font-bold text-base text-rose-700">
+            <span>Falha ao carregar este módulo</span>
+          </div>
+          <p className="text-xs text-rose-800">
+            {this.state.error?.message || "Ocorreu um erro interno de renderização."}
+          </p>
+          <button
+            onClick={() => {
+              this.setState({ hasError: false, error: null });
+              window.location.reload();
+            }}
+            className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs shadow-md transition"
+          >
+            Recarregar Página
+          </button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
 // Toasts
 const ToastCtx = createContext<(m: string, tone?: "ok" | "err") => void>(() => {});
 export const useToast = () => useContext(ToastCtx);
