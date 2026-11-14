@@ -4,7 +4,7 @@ import { badRequest, conflict, forbidden, notFound } from "@/lib/errors";
 import { AuthUser, can } from "@/lib/session";
 import { dateOnly } from "@/lib/time";
 import { audit } from "./audit.service";
-import { applyMovement } from "./stock.service";
+import { applyMovement, lockBalance } from "./stock.service";
 import { LedgerMovement, closeBlockers, computeExpected, crossShift, difference, isJustificationValid } from "./inventory-calc";
 
 const CLASSIFICATION_V1 = "NORMAL" as const; // v1: só normais. Para NG, basta aceitar "NG" no start (estrutura já é independente).
@@ -159,25 +159,76 @@ export async function compareInventory(sessionId: string) {
   return { session, rows };
 }
 
-/** Encerra a contagem: exige os dois turnos completos, gera as ocorrências de divergência e avança o fluxo. */
-export async function finishCounting(sessionId: string, user: AuthUser, ip?: string) {
+/** Conclui a contagem de um turno específico. Se o outro turno ainda não foi iniciado, prepara-o para contagem. */
+export async function finishShift(sessionId: string, shift: Shift, user: AuthUser, ip?: string) {
+  return transaction(async (tx) => {
+    const s = await tx.inventorySession.findUnique({ where: { id: sessionId } });
+    if (!s) throw notFound("Inventário não encontrado.");
+    if (s.status === "FECHADO") throw conflict("INVENTARIO_FECHADO", "Inventário já fechado.");
+    if (["COMPARADO", "JUSTIFICATIVAS", "AGUARDANDO_APROVACAO"].includes(s.status))
+      throw conflict("CONTAGEM_ENCERRADA", "A contagem deste inventário já foi encerrada.");
+
+    const total = await tx.inventoryCount.count({ where: { sessionId, shift } });
+    if (total === 0) throw badRequest(`Turno da ${shift === "MANHA" ? "manhã" : "noite"} não foi iniciado neste inventário.`);
+
+    const uncounted = await tx.inventoryCount.count({ where: { sessionId, shift, physicalQty: null } });
+    if (uncounted > 0) {
+      throw conflict("CONTAGEM_INCOMPLETA", `Ainda restam ${uncounted} item(ns) a conferir no turno da ${shift === "MANHA" ? "manhã" : "noite"}.`);
+    }
+
+    // Se concluiu MANHA, prepara snapshot do turno da NOITE caso ainda não tenha sido iniciado
+    if (shift === "MANHA") {
+      const noiteCount = await tx.inventoryCount.count({ where: { sessionId, shift: "NOITE" } });
+      if (noiteCount === 0) {
+        await snapshotShift(tx, sessionId, "NOITE", s.classification);
+      }
+      await tx.inventorySession.update({ where: { id: sessionId }, data: { status: "CONTAGEM_NOITE" } });
+    }
+
+    await audit(tx, {
+      userId: user.id,
+      action: "TURNO_CONCLUIDO",
+      entity: "InventorySession",
+      entityId: sessionId,
+      ip,
+      after: { shift, total },
+    });
+
+    return {
+      ok: true,
+      shift,
+      message: `Turno da ${shift === "MANHA" ? "manhã" : "noite"} concluído com sucesso!`,
+    };
+  });
+}
+
+/** Encerra a contagem: compara os turnos, gera as ocorrências de divergência e avança o fluxo. */
+export async function finishCounting(sessionId: string, user: AuthUser, ip?: string, allowSingleShift = false) {
   const cmp = await compareInventory(sessionId);
   return transaction(async (tx) => {
     const s = cmp.session;
     if (!["CONTAGEM_MANHA", "CONTAGEM_NOITE", "INICIADO"].includes(s.status)) throw conflict("FLUXO_INVALIDO", "A contagem já foi encerrada.");
     const totals = await tx.inventoryCount.groupBy({ by: ["shift"], where: { sessionId }, _count: { _all: true, physicalQty: true } });
-    if (totals.length < 2) throw conflict("TURNO_FALTANDO", "Conte os dois turnos (manhã e noite) antes de comparar.");
-    for (const t of totals) if (t._count.physicalQty < t._count._all) throw conflict("CONTAGEM_INCOMPLETA", `Contagem do turno ${t.shift === "MANHA" ? "da manhã" : "da noite"} incompleta (${t._count.physicalQty}/${t._count._all}).`);
+    if (totals.length < 2 && !allowSingleShift) {
+      throw conflict("TURNO_FALTANDO", "O inventário padrão requer a contagem dos 2 turnos (manhã e noite). Conclua o 1º turno e realize o 2º turno, ou confirme a comparação com turno único.");
+    }
+    for (const t of totals) {
+      if (t._count.physicalQty < t._count._all) {
+        throw conflict("CONTAGEM_INCOMPLETA", `Contagem do turno ${t.shift === "MANHA" ? "da manhã" : "da noite"} incompleta (${t._count.physicalQty}/${t._count._all}).`);
+      }
+    }
     let created = 0;
-    for (const r of cmp.rows) for (const shift of ["MANHA", "NOITE"] as const) {
-      const d = r[shift];
-      if (!d || d.difference === 0) continue;
-      await tx.inventoryDiscrepancy.upsert({
-        where: { sessionId_productId_shift: { sessionId, productId: r.productId, shift } },
-        create: { sessionId, productId: r.productId, shift, expectedQty: d.expectedQty, physicalQty: d.physicalQty, difference: d.difference },
-        update: {},
-      });
-      created++;
+    for (const r of cmp.rows) {
+      for (const shift of ["MANHA", "NOITE"] as const) {
+        const d = r[shift];
+        if (!d || d.difference === 0) continue;
+        await tx.inventoryDiscrepancy.upsert({
+          where: { sessionId_productId_shift: { sessionId, productId: r.productId, shift } },
+          create: { sessionId, productId: r.productId, shift, expectedQty: d.expectedQty, physicalQty: d.physicalQty, difference: d.difference },
+          update: { expectedQty: d.expectedQty, physicalQty: d.physicalQty, difference: d.difference },
+        });
+        created++;
+      }
     }
     const status = created > 0 ? "COMPARADO" : "AGUARDANDO_APROVACAO";
     await tx.inventorySession.update({ where: { id: sessionId }, data: { status } });
@@ -228,9 +279,49 @@ export async function approve(sessionId: string, i: { discrepancyId?: string; de
     if (i.decision === "APROVADO" && i.adjust) {
       if (!can(user, "adjustments.authorize")) throw forbidden("Você não pode autorizar ajustes de estoque.");
       if (!isJustificationValid(i.adjustJustification)) throw badRequest("Informe a justificativa do ajuste.");
-      const { movement } = await applyMovement(tx, { productId: d.productId, type: d.difference > 0 ? "AJUSTE_POSITIVO" : "AJUSTE_NEGATIVO",
-        quantity: Math.abs(d.difference), note: `Ajuste do inventário ${s.code}: ${i.adjustJustification!.trim()}`, userId: user.id, source: "AJUSTE_INVENTARIO", ip });
-      await tx.stockAdjustment.create({ data: { sessionId, discrepancyId: d.id, movementId: movement.id, quantity: d.difference, justification: i.adjustJustification!.trim(), authorizedById: user.id } });
+
+      // Evita duplo ajuste no mesmo inventário (ex: aprovar manhã e noite somando duas vezes a mesma diferença física)
+      const existingAdj = await tx.stockAdjustment.findFirst({
+        where: { sessionId, discrepancy: { productId: d.productId } },
+      });
+
+      if (existingAdj) {
+        // Já houve ajuste para este produto nesta sessão de inventário
+        await audit(tx, {
+          userId: user.id,
+          action: "AJUSTE_DUPLICADO_IGNORADO",
+          entity: "InventoryDiscrepancy",
+          entityId: d.id,
+          ip,
+          after: { productId: d.productId, reason: "Ajuste já realizado para este produto nesta sessão de inventário" },
+        });
+      } else {
+        const currentBalance = await lockBalance(tx, d.productId);
+        // O delta deve levar o saldo atual exatamente para a contagem física aprovada (d.physicalQty)
+        const delta = d.physicalQty - currentBalance;
+
+        if (delta !== 0) {
+          const { movement } = await applyMovement(tx, {
+            productId: d.productId,
+            type: delta > 0 ? "AJUSTE_POSITIVO" : "AJUSTE_NEGATIVO",
+            quantity: Math.abs(delta),
+            note: `Ajuste do inventário ${s.code} (${d.shift}): ${i.adjustJustification!.trim()}`,
+            userId: user.id,
+            source: "AJUSTE_INVENTARIO",
+            ip,
+          });
+          await tx.stockAdjustment.create({
+            data: {
+              sessionId,
+              discrepancyId: d.id,
+              movementId: movement.id,
+              quantity: delta,
+              justification: i.adjustJustification!.trim(),
+              authorizedById: user.id,
+            },
+          });
+        }
+      }
     }
     const pending = await tx.inventoryDiscrepancy.count({ where: { sessionId, status: { in: ["ABERTA", "REJEITADA"] } } });
     await tx.inventorySession.update({ where: { id: sessionId }, data: { status: pending ? "JUSTIFICATIVAS" : "AGUARDANDO_APROVACAO" } });

@@ -120,7 +120,11 @@ function Count({ inv, reload, can }: { inv: any; reload: () => void; can: boolea
   const toast = useToast();
   const locked = inv.status !== "INICIADO" && !String(inv.status).startsWith("CONTAGEM");
   const shifts = (["MANHA", "NOITE"] as const).filter((s) => inv.progress[s]);
-  const [shift, setShift] = useState<"MANHA" | "NOITE">(shifts[0] ?? inv.startShift);
+  const defaultShift =
+    inv.status === "CONTAGEM_NOITE" && inv.progress.NOITE
+      ? "NOITE"
+      : shifts[0] ?? inv.startShift ?? "MANHA";
+  const [shift, setShift] = useState<"MANHA" | "NOITE">(defaultShift);
   const { data, reload: reloadItems } = useFetch<any>(`/api/inventory/${inv.id}?shift=${shift}`);
   const items: any[] = data?.items ?? [];
 
@@ -128,11 +132,22 @@ function Count({ inv, reload, can }: { inv: any; reload: () => void; can: boolea
   const [stage, setStage] = useState<1 | 2 | 3>(1);
   const [idx, setIdx] = useState(0);
 
-  // Valores da contagem para o item atual
+  // Valores da contagem para o item atual (Etapa 1)
   const [warehouseVal, setWarehouseVal] = useState<string>("0");
   const [preAssemblyVal, setPreAssemblyVal] = useState<string>("0");
   const [err, setErr] = useState("");
   const [busy, setBusy] = useState(false);
+
+  // Estado do Assistente de Kits da Pré-Montagem (Etapa 2)
+  const [preMode, setPreMode] = useState<"kits" | "items">("kits");
+  const [l2Count, setL2Count] = useState<string>("0");
+  const [l3Count, setL3Count] = useState<string>("0");
+  const [pcdCount, setPcdCount] = useState<string>("0");
+  const [looseTampaUsb, setLooseTampaUsb] = useState<string>("0");
+  const [looseAdesivoLD, setLooseAdesivoLD] = useState<string>("0");
+  const [looseAdesivoLE, setLooseAdesivoLE] = useState<string>("0");
+  const [looseChicoteBotao, setLooseChicoteBotao] = useState<string>("0");
+  const [looseMolduraBotao, setLooseMolduraBotao] = useState<string>("0");
 
   const cur = items[idx];
 
@@ -210,32 +225,162 @@ function Count({ inv, reload, can }: { inv: any; reload: () => void; can: boolea
     }
   };
 
+  // Cálculo ao vivo dos componentes a partir dos Kits informados na Etapa 2
+  const calcKitPieces = useMemo(() => {
+    const l2 = Number(l2Count) || 0;
+    const l3 = Number(l3Count) || 0;
+    const pcd = Number(pcdCount) || 0;
+    const usbAvulsa = Number(looseTampaUsb) || 0;
+    const ald = Number(looseAdesivoLD) || 0;
+    const ale = Number(looseAdesivoLE) || 0;
+    const cBotao = Number(looseChicoteBotao) || 0;
+    const mBotao = Number(looseMolduraBotao) || 0;
+
+    return {
+      molduraTraseira: l2 + l3,
+      molduraSemBotao: l2 + l3,
+      chicoteSemBotao: l2 + l3,
+      multimidiaPioneer: l2 + l3,
+      tampaUsb: l2 + l3 + usbAvulsa,
+      tampaCegaPcd: pcd,
+      tampaCegaUsb: pcd,
+      adesivoLD: ald,
+      adesivoLE: ale,
+      chicoteComBotao: cBotao,
+      molduraComBotao: mBotao,
+    };
+  }, [
+    l2Count,
+    l3Count,
+    pcdCount,
+    looseTampaUsb,
+    looseAdesivoLD,
+    looseAdesivoLE,
+    looseChicoteBotao,
+    looseMolduraBotao,
+  ]);
+
+  // Salva em lote a Pré-Montagem calculada pelos Kits
+  const savePreAssemblyKits = async () => {
+    if (!items.length) return;
+    setBusy(true);
+    setErr("");
+    try {
+      await Promise.all(
+        items.map(async (it) => {
+          const codeClean = (it.code || "").trim();
+          const codeNorm = codeClean.replace(/\s+/g, "");
+
+          let pVal = 0;
+          if (codeNorm.startsWith("BRPRT3110100001") && !codeClean.includes("NG")) {
+            pVal = calcKitPieces.molduraTraseira;
+          } else if (codeNorm.startsWith("BRPRT11608") && !codeClean.includes("NG")) {
+            pVal = calcKitPieces.molduraSemBotao;
+          } else if (codeNorm.startsWith("BRPRT11604") && !codeClean.includes("NG")) {
+            pVal = calcKitPieces.chicoteSemBotao;
+          } else if (codeNorm.startsWith("BRPRT11603") && !codeClean.includes("NG")) {
+            pVal = calcKitPieces.multimidiaPioneer;
+          } else if (codeNorm.startsWith("BRPRT11609") && !codeClean.includes("NG")) {
+            pVal = calcKitPieces.tampaUsb;
+          } else if (codeNorm.startsWith("BRPRT11632") && !codeClean.includes("NG")) {
+            pVal = calcKitPieces.tampaCegaPcd;
+          } else if (codeNorm.startsWith("BRPRT11633") && !codeClean.includes("NG")) {
+            pVal = calcKitPieces.tampaCegaUsb;
+          } else if (codeNorm.startsWith("99098xA0A") && !codeClean.includes("NG")) {
+            pVal = calcKitPieces.adesivoLD;
+          } else if (codeNorm.startsWith("99099xA0A") && !codeClean.includes("NG")) {
+            pVal = calcKitPieces.adesivoLE;
+          } else if (codeNorm.startsWith("BRPRT11605") && !codeClean.includes("NG")) {
+            pVal = calcKitPieces.chicoteComBotao;
+          } else if (codeNorm.startsWith("BRPRT11607") && !codeClean.includes("NG")) {
+            pVal = calcKitPieces.molduraComBotao;
+          } else {
+            pVal = it.preAssemblyQty ?? 0;
+          }
+
+          const wVal = it.warehouseQty !== null && it.warehouseQty !== undefined ? it.warehouseQty : 0;
+          return api(`/api/inventory/${inv.id}/counts`, {
+            method: "POST",
+            json: {
+              productId: it.productId,
+              shift,
+              warehouseQty: wVal,
+              preAssemblyQty: pVal,
+              physicalQty: wVal + pVal,
+            },
+          });
+        })
+      );
+
+      toast("Pré-Montagem salva com sucesso! Componentes calculados automaticamente.", "ok");
+      await reloadItems();
+      reload();
+      setStage(3);
+    } catch (e: any) {
+      setErr(e.message || "Erro ao salvar pré-montagem.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const startOther = async () => {
     try {
       await api(`/api/inventory/${inv.id}/shifts`, { method: "POST", json: { shift: other } });
       setShift(other);
+      setStage(1);
+      setIdx(0);
       reload();
     } catch (e: any) {
       toast(e.message, "err");
     }
   };
 
-  const finish = async () => {
+  // Conclui o turno da Manhã de forma independente
+  const finishMorningShift = async () => {
+    setBusy(true);
     try {
-      const r = await api(`/api/inventory/${inv.id}/finish`, { method: "POST" });
+      await api(`/api/inventory/${inv.id}/finish`, {
+        method: "POST",
+        json: { shift: "MANHA" },
+      });
+      toast("Turno da Manhã concluído com sucesso! Turno da Noite liberado para contagem.", "ok");
+      await reloadItems();
+      reload();
+      setShift("NOITE");
+      setStage(1);
+      setIdx(0);
+    } catch (e: any) {
+      toast(e.message, "err");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  // Conclui e compara os turnos
+  const finishComparison = async (allowSingleShift = false) => {
+    setBusy(true);
+    try {
+      const r = await api(`/api/inventory/${inv.id}/finish`, {
+        method: "POST",
+        json: { allowSingleShift },
+      });
       toast(
         r.discrepancies
-          ? `${r.discrepancies} divergência(s) identificada(s).`
-          : "Contagem validada sem divergências!",
+          ? `${r.discrepancies} divergência(s) apuradas com sucesso! Redirecionando...`
+          : "Contagem validada perfeitamente sem divergências!",
         "ok"
       );
       reload();
     } catch (e: any) {
       toast(e.message, "err");
+    } finally {
+      setBusy(false);
     }
   };
 
-  const allDone = shifts.length === 2 && shifts.every((s) => inv.progress[s].counted === inv.progress[s].total);
+  const isCurrentShiftComplete =
+    items.length > 0 && items.every((it) => it.physicalQty !== null && it.physicalQty !== undefined);
+  const allDone = shifts.length === 2 && shifts.every((s) => inv.progress[s]?.counted === inv.progress[s]?.total);
 
   // Totais do turno atual
   const totalWarehouseSum = items.reduce((acc, it) => acc + (it.warehouseQty || 0), 0);
@@ -334,22 +479,30 @@ function Count({ inv, reload, can }: { inv: any; reload: () => void; can: boolea
         </div>
 
         <div className="flex items-center gap-2">
+          {!locked && can && shift === "MANHA" && isCurrentShiftComplete && (
+            <Button variant="success" loading={busy} onClick={finishMorningShift}>
+              <CheckCircle2 className="h-4 w-4" />
+              Concluir 1º Turno (Manhã)
+            </Button>
+          )}
+
           {!locked && can && !inv.progress[other] && (
             <Button variant="sky" onClick={startOther}>
               Iniciar Turno da {SHIFT[other]}
             </Button>
           )}
-          {!locked && can && (
-            <Button variant="success" disabled={!allDone} onClick={finish}>
+
+          {!locked && can && shift === "NOITE" && isCurrentShiftComplete && (
+            <Button variant="success" loading={busy} onClick={() => finishComparison(false)}>
               <CheckCircle2 className="h-4 w-4" />
-              Finalizar Contagem &amp; Comparar
+              Concluir Turno da Noite &amp; Comparar
             </Button>
           )}
         </div>
       </div>
 
-      {/* ETAPA 1 E 2: ASSISTENTE DE CONTAGEM ITEM POR ITEM (DESIGN TOUCH TABLET) */}
-      {(stage === 1 || stage === 2) && (
+      {/* ETAPA 1: PALLETS FECHADOS ITEM POR ITEM (DESIGN TOUCH TABLET) */}
+      {stage === 1 && (
         <div className="bg-white rounded-3xl border border-slate-200 shadow-xl overflow-hidden p-6 md:p-8">
           {locked ? (
             <p className="text-center py-10 text-slate-500 text-lg">A contagem deste inventário já foi encerrada.</p>
@@ -361,12 +514,8 @@ function Count({ inv, reload, can }: { inv: any; reload: () => void; can: boolea
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-slate-100">
                 <div>
                   <div className="flex items-center gap-2 mb-1">
-                    <span
-                      className={`px-2.5 py-1 rounded-lg text-xs font-bold uppercase tracking-wider ${
-                        stage === 1 ? "bg-blue-100 text-blue-800" : "bg-amber-100 text-amber-800"
-                      }`}
-                    >
-                      {stage === 1 ? "Etapa 1: Pallets Fechados" : "Etapa 2: Pré-Montagem (Bancada)"}
+                    <span className="px-2.5 py-1 rounded-lg text-xs font-bold uppercase tracking-wider bg-blue-100 text-blue-800">
+                      Etapa 1: Pallets Fechados (Almoxarifado)
                     </span>
                     <span className="text-xs font-mono font-semibold text-slate-500">
                       Item {idx + 1} de {items.length}
@@ -394,12 +543,10 @@ function Count({ inv, reload, can }: { inv: any; reload: () => void; can: boolea
               <div className="bg-slate-50 border-2 border-slate-200 rounded-3xl p-6 md:p-8 space-y-6">
                 <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
                   <label className="text-base md:text-lg font-bold text-slate-800">
-                    {stage === 1
-                      ? "Quantidade nos Pallets Fechados:"
-                      : "Quantidade na Pré-Montagem (L2, L3, PCD, Bancada):"}
+                    Quantidade nos Pallets Fechados:
                   </label>
                   <span className="text-xs text-slate-500 bg-white px-3 py-1 rounded-full border border-slate-200">
-                    Padrão zero se não houver peça
+                    Digite a quantidade ou use os botões rápidos
                   </span>
                 </div>
 
@@ -425,12 +572,9 @@ function Count({ inv, reload, can }: { inv: any; reload: () => void; can: boolea
                     min={0}
                     inputMode="numeric"
                     autoFocus
-                    value={stage === 1 ? warehouseVal : preAssemblyVal}
+                    value={warehouseVal}
                     disabled={!can}
-                    onChange={(e) => {
-                      if (stage === 1) setWarehouseVal(e.target.value);
-                      else setPreAssemblyVal(e.target.value);
-                    }}
+                    onChange={(e) => setWarehouseVal(e.target.value)}
                     onKeyDown={(e) => e.key === "Enter" && can && handleConfirm()}
                     className="w-36 sm:w-56 h-14 sm:h-20 text-center font-mono text-3xl sm:text-4xl font-extrabold bg-white border-2 border-brand rounded-2xl shadow-inner focus:outline-none focus:ring-4 focus:ring-brand/20 text-navy-900"
                   />
@@ -455,10 +599,7 @@ function Count({ inv, reload, can }: { inv: any; reload: () => void; can: boolea
                 <div className="flex flex-wrap items-center justify-center gap-2 pt-2">
                   <button
                     type="button"
-                    onClick={() => {
-                      if (stage === 1) setWarehouseVal("0");
-                      else setPreAssemblyVal("0");
-                    }}
+                    onClick={() => setWarehouseVal("0")}
                     className="px-4 py-2.5 min-h-[44px] rounded-xl bg-slate-200 hover:bg-slate-300 font-bold text-xs text-slate-800 active:scale-95 shadow-xs"
                   >
                     Zerar (0)
@@ -475,38 +616,10 @@ function Count({ inv, reload, can }: { inv: any; reload: () => void; can: boolea
                   ))}
                 </div>
 
-                {/* CÁLCULO AO VIVO DESTE PRODUTO */}
-                <div className="bg-white rounded-2xl p-4 border border-slate-200 grid grid-cols-3 gap-2 text-center">
-                  <div>
-                    <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block">
-                      Pallets Fechados
-                    </span>
-                    <span className="text-lg md:text-xl font-bold font-mono text-blue-600">
-                      {fmtN(Number(warehouseVal) || 0)}
-                    </span>
-                  </div>
-                  <div>
-                    <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block">
-                      Pré-Montagem
-                    </span>
-                    <span className="text-lg md:text-xl font-bold font-mono text-amber-600">
-                      {fmtN(Number(preAssemblyVal) || 0)}
-                    </span>
-                  </div>
-                  <div className="bg-emerald-50 rounded-xl py-1 border border-emerald-200">
-                    <span className="text-[11px] font-bold text-emerald-800 uppercase tracking-wider block">
-                      Total Físico
-                    </span>
-                    <span className="text-xl md:text-2xl font-extrabold font-mono text-emerald-700">
-                      {fmtN((Number(warehouseVal) || 0) + (Number(preAssemblyVal) || 0))}
-                    </span>
-                  </div>
-                </div>
-
                 {err && <ErrorBox message={err} />}
               </div>
 
-              {/* BOTÕES DE AÇÃO COM CORES VIBRANTES E TAMANHO GRANDE DE TOQUE */}
+              {/* BOTÕES DE AÇÃO */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
                 <Button
                   type="button"
@@ -543,7 +656,7 @@ function Count({ inv, reload, can }: { inv: any; reload: () => void; can: boolea
                 </Button>
               </div>
 
-              {/* ATALHOS RÁPIDOS DE LISTA */}
+              {/* ATALHOS RÁPIDOS */}
               <div className="pt-4 border-t border-slate-100 flex flex-wrap items-center justify-between gap-3 text-xs text-slate-500">
                 <div className="flex items-center gap-2">
                   <span>Progresso do Turno:</span>
@@ -552,16 +665,473 @@ function Count({ inv, reload, can }: { inv: any; reload: () => void; can: boolea
                   </b>
                 </div>
 
-                <div className="flex items-center gap-2">
-                  {stage === 1 ? (
-                    <Button variant="sky" onClick={() => setStage(2)}>
-                      Ir para Pré-Montagem <ArrowRight className="h-4 w-4" />
-                    </Button>
-                  ) : (
-                    <Button variant="purple" onClick={() => setStage(3)}>
-                      Ver Tabela Consolidada <ClipboardList className="h-4 w-4" />
-                    </Button>
-                  )}
+                <Button variant="sky" onClick={() => setStage(2)}>
+                  Ir para Etapa 2: Pré-Montagem <ArrowRight className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ETAPA 2: ASSISTENTE DE PRÉ-MONTAGEM (KITS L2, L3, PCD E PEÇAS AVULSAS) */}
+      {stage === 2 && (
+        <div className="bg-white rounded-3xl border border-slate-200 shadow-xl overflow-hidden p-6 md:p-8 space-y-6">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-slate-200">
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <span className="px-2.5 py-1 rounded-lg text-xs font-bold uppercase tracking-wider bg-amber-100 text-amber-800">
+                  Etapa 2: Pré-Montagem
+                </span>
+                <span className="text-xs text-slate-500 font-semibold">
+                  Assistente Inteligente de Kits Montados
+                </span>
+              </div>
+              <h2 className="text-2xl md:text-3xl font-extrabold text-navy-900 tracking-tight">
+                Contagem da Pré-Montagem por Kits (L2 / L3 / PCD)
+              </h2>
+              <p className="text-sm text-slate-500 mt-1">
+                Aponte quantas multimídias já estão pré-montadas na bancada. O sistema calcula automaticamente os
+                componentes (Moldura Traseira, Multimídia Pioneer, Chicotes, Molduras e Tampas).
+              </p>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <Button
+                variant={preMode === "kits" ? "warning" : "indigo"}
+                onClick={() => setPreMode(preMode === "kits" ? "items" : "kits")}
+              >
+                {preMode === "kits" ? "Modo Peça a Peça" : "Voltar aos Kits L2/L3/PCD"}
+              </Button>
+            </div>
+          </div>
+
+          {preMode === "kits" ? (
+            <div className="space-y-6">
+              {/* GRADE DE CARDS DOS KITS */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {/* CARD L2 */}
+                <div className="bg-blue-50/60 border-2 border-blue-300 rounded-3xl p-5 space-y-4 shadow-sm">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <span className="text-xs font-bold uppercase text-blue-700 tracking-wider">Kit Multimídia</span>
+                      <h3 className="text-2xl font-extrabold text-navy-900">L2 (200)</h3>
+                    </div>
+                    <span className="px-3 py-1 rounded-full text-xs font-extrabold bg-blue-600 text-white shadow-xs">
+                      {fmtN(Number(l2Count) || 0)} un
+                    </span>
+                  </div>
+
+                  <p className="text-xs text-slate-600">
+                    Contém: 1 Moldura Traseira + 1 Moldura s/ botão + 1 Chicote s/ botão + 1 Pioneer + 1 Tampa USB
+                  </p>
+
+                  <div className="flex items-center justify-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setL2Count(String(Math.max(0, (Number(l2Count) || 0) - 10)))}
+                      className="w-10 h-10 rounded-xl bg-white border border-slate-300 font-bold text-sm text-slate-700 shadow-xs"
+                    >
+                      -10
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setL2Count(String(Math.max(0, (Number(l2Count) || 0) - 1)))}
+                      className="w-10 h-10 rounded-xl bg-white border border-slate-300 font-bold text-lg text-slate-700 shadow-xs"
+                    >
+                      -
+                    </button>
+
+                    <input
+                      type="number"
+                      min={0}
+                      value={l2Count}
+                      onChange={(e) => setL2Count(e.target.value)}
+                      className="w-24 h-12 text-center font-mono text-2xl font-extrabold bg-white border-2 border-blue-500 rounded-xl text-navy-900 shadow-inner"
+                    />
+
+                    <button
+                      type="button"
+                      onClick={() => setL2Count(String((Number(l2Count) || 0) + 1))}
+                      className="w-10 h-10 rounded-xl bg-white border border-slate-300 font-bold text-lg text-slate-700 shadow-xs"
+                    >
+                      +
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setL2Count(String((Number(l2Count) || 0) + 10))}
+                      className="w-10 h-10 rounded-xl bg-white border border-slate-300 font-bold text-sm text-slate-700 shadow-xs"
+                    >
+                      +10
+                    </button>
+                  </div>
+
+                  <div className="flex flex-wrap gap-1.5 justify-center pt-1">
+                    <button
+                      type="button"
+                      onClick={() => setL2Count("0")}
+                      className="px-2.5 py-1 text-xs rounded-lg bg-slate-200 font-bold text-slate-700"
+                    >
+                      Zerar
+                    </button>
+                    {[50, 100, 200].map((n) => (
+                      <button
+                        key={n}
+                        type="button"
+                        onClick={() => setL2Count(String((Number(l2Count) || 0) + n))}
+                        className="px-2.5 py-1 text-xs rounded-lg bg-blue-100 text-blue-800 font-bold"
+                      >
+                        +{n}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* CARD L3 */}
+                <div className="bg-purple-50/60 border-2 border-purple-300 rounded-3xl p-5 space-y-4 shadow-sm">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <span className="text-xs font-bold uppercase text-purple-700 tracking-wider">Kit Multimídia</span>
+                      <h3 className="text-2xl font-extrabold text-navy-900">L3 (208)</h3>
+                    </div>
+                    <span className="px-3 py-1 rounded-full text-xs font-extrabold bg-purple-600 text-white shadow-xs">
+                      {fmtN(Number(l3Count) || 0)} un
+                    </span>
+                  </div>
+
+                  <p className="text-xs text-slate-600">
+                    Contém: 1 Moldura Traseira + 1 Moldura s/ botão + 1 Chicote s/ botão + 1 Pioneer + 1 Tampa USB
+                  </p>
+
+                  <div className="flex items-center justify-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setL3Count(String(Math.max(0, (Number(l3Count) || 0) - 10)))}
+                      className="w-10 h-10 rounded-xl bg-white border border-slate-300 font-bold text-sm text-slate-700 shadow-xs"
+                    >
+                      -10
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setL3Count(String(Math.max(0, (Number(l3Count) || 0) - 1)))}
+                      className="w-10 h-10 rounded-xl bg-white border border-slate-300 font-bold text-lg text-slate-700 shadow-xs"
+                    >
+                      -
+                    </button>
+
+                    <input
+                      type="number"
+                      min={0}
+                      value={l3Count}
+                      onChange={(e) => setL3Count(e.target.value)}
+                      className="w-24 h-12 text-center font-mono text-2xl font-extrabold bg-white border-2 border-purple-500 rounded-xl text-navy-900 shadow-inner"
+                    />
+
+                    <button
+                      type="button"
+                      onClick={() => setL3Count(String((Number(l3Count) || 0) + 1))}
+                      className="w-10 h-10 rounded-xl bg-white border border-slate-300 font-bold text-lg text-slate-700 shadow-xs"
+                    >
+                      +
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setL3Count(String((Number(l3Count) || 0) + 10))}
+                      className="w-10 h-10 rounded-xl bg-white border border-slate-300 font-bold text-sm text-slate-700 shadow-xs"
+                    >
+                      +10
+                    </button>
+                  </div>
+
+                  <div className="flex flex-wrap gap-1.5 justify-center pt-1">
+                    <button
+                      type="button"
+                      onClick={() => setL3Count("0")}
+                      className="px-2.5 py-1 text-xs rounded-lg bg-slate-200 font-bold text-slate-700"
+                    >
+                      Zerar
+                    </button>
+                    {[50, 100, 208].map((n) => (
+                      <button
+                        key={n}
+                        type="button"
+                        onClick={() => setL3Count(String((Number(l3Count) || 0) + n))}
+                        className="px-2.5 py-1 text-xs rounded-lg bg-purple-100 text-purple-800 font-bold"
+                      >
+                        +{n}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* CARD PCD */}
+                <div className="bg-emerald-50/60 border-2 border-emerald-300 rounded-3xl p-5 space-y-4 shadow-sm">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <span className="text-xs font-bold uppercase text-emerald-700 tracking-wider">Kit Multimídia</span>
+                      <h3 className="text-2xl font-extrabold text-navy-900">PCD (56)</h3>
+                    </div>
+                    <span className="px-3 py-1 rounded-full text-xs font-extrabold bg-emerald-600 text-white shadow-xs">
+                      {fmtN(Number(pcdCount) || 0)} un
+                    </span>
+                  </div>
+
+                  <p className="text-xs text-slate-600">
+                    Contém: 1 Tampa Cega Moldura PCD (BRPRT 11632) + 1 Tampa Cega USB (BRPRT 11633)
+                  </p>
+
+                  <div className="flex items-center justify-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setPcdCount(String(Math.max(0, (Number(pcdCount) || 0) - 10)))}
+                      className="w-10 h-10 rounded-xl bg-white border border-slate-300 font-bold text-sm text-slate-700 shadow-xs"
+                    >
+                      -10
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setPcdCount(String(Math.max(0, (Number(pcdCount) || 0) - 1)))}
+                      className="w-10 h-10 rounded-xl bg-white border border-slate-300 font-bold text-lg text-slate-700 shadow-xs"
+                    >
+                      -
+                    </button>
+
+                    <input
+                      type="number"
+                      min={0}
+                      value={pcdCount}
+                      onChange={(e) => setPcdCount(e.target.value)}
+                      className="w-24 h-12 text-center font-mono text-2xl font-extrabold bg-white border-2 border-emerald-500 rounded-xl text-navy-900 shadow-inner"
+                    />
+
+                    <button
+                      type="button"
+                      onClick={() => setPcdCount(String((Number(pcdCount) || 0) + 1))}
+                      className="w-10 h-10 rounded-xl bg-white border border-slate-300 font-bold text-lg text-slate-700 shadow-xs"
+                    >
+                      +
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setPcdCount(String((Number(pcdCount) || 0) + 10))}
+                      className="w-10 h-10 rounded-xl bg-white border border-slate-300 font-bold text-sm text-slate-700 shadow-xs"
+                    >
+                      +10
+                    </button>
+                  </div>
+
+                  <div className="flex flex-wrap gap-1.5 justify-center pt-1">
+                    <button
+                      type="button"
+                      onClick={() => setPcdCount("0")}
+                      className="px-2.5 py-1 text-xs rounded-lg bg-slate-200 font-bold text-slate-700"
+                    >
+                      Zerar
+                    </button>
+                    {[10, 20, 56].map((n) => (
+                      <button
+                        key={n}
+                        type="button"
+                        onClick={() => setPcdCount(String((Number(pcdCount) || 0) + n))}
+                        className="px-2.5 py-1 text-xs rounded-lg bg-emerald-100 text-emerald-800 font-bold"
+                      >
+                        +{n}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* PEÇAS AVULSAS NA BANCADA */}
+              <div className="bg-amber-50/50 border border-amber-200 rounded-2xl p-5 space-y-3">
+                <span className="text-xs font-bold uppercase text-amber-800 tracking-wider block">
+                  Sobras e Peças Avulsas na Bancada de Pré-Montagem (Opcional)
+                </span>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  <div>
+                    <label className="text-xs font-semibold text-slate-700 block mb-1">
+                      Tampa USB Avulsa:
+                    </label>
+                    <input
+                      type="number"
+                      min={0}
+                      value={looseTampaUsb}
+                      onChange={(e) => setLooseTampaUsb(e.target.value)}
+                      className="w-full h-10 text-center font-mono font-bold bg-white border border-slate-300 rounded-lg text-navy-900"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs font-semibold text-slate-700 block mb-1">
+                      Adesivo L/D Avulso:
+                    </label>
+                    <input
+                      type="number"
+                      min={0}
+                      value={looseAdesivoLD}
+                      onChange={(e) => setLooseAdesivoLD(e.target.value)}
+                      className="w-full h-10 text-center font-mono font-bold bg-white border border-slate-300 rounded-lg text-navy-900"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs font-semibold text-slate-700 block mb-1">
+                      Adesivo L/E Avulso:
+                    </label>
+                    <input
+                      type="number"
+                      min={0}
+                      value={looseAdesivoLE}
+                      onChange={(e) => setLooseAdesivoLE(e.target.value)}
+                      className="w-full h-10 text-center font-mono font-bold bg-white border border-slate-300 rounded-lg text-navy-900"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs font-semibold text-slate-700 block mb-1">
+                      Chicote c/ botão:
+                    </label>
+                    <input
+                      type="number"
+                      min={0}
+                      value={looseChicoteBotao}
+                      onChange={(e) => setLooseChicoteBotao(e.target.value)}
+                      className="w-full h-10 text-center font-mono font-bold bg-white border border-slate-300 rounded-lg text-navy-900"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* PRÉVIA DOS COMPONENTES CALCULADOS */}
+              <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold uppercase tracking-wider text-slate-600">
+                    Componentes Calculados para a Pré-Montagem:
+                  </span>
+                  <span className="text-xs text-slate-500">
+                    Soma automática de L2 ({l2Count}) + L3 ({l3Count}) + PCD ({pcdCount})
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+                  <div className="bg-white p-2 rounded-xl border border-slate-200">
+                    <span className="text-slate-500 block truncate">Moldura Traseira:</span>
+                    <b className="text-sm font-mono text-navy-900">{calcKitPieces.molduraTraseira} pçs</b>
+                  </div>
+                  <div className="bg-white p-2 rounded-xl border border-slate-200">
+                    <span className="text-slate-500 block truncate">Multimídia Pioneer:</span>
+                    <b className="text-sm font-mono text-navy-900">{calcKitPieces.multimidiaPioneer} pçs</b>
+                  </div>
+                  <div className="bg-white p-2 rounded-xl border border-slate-200">
+                    <span className="text-slate-500 block truncate">Chicote s/ botão:</span>
+                    <b className="text-sm font-mono text-navy-900">{calcKitPieces.chicoteSemBotao} pçs</b>
+                  </div>
+                  <div className="bg-white p-2 rounded-xl border border-slate-200">
+                    <span className="text-slate-500 block truncate">Tampa USB:</span>
+                    <b className="text-sm font-mono text-navy-900">{calcKitPieces.tampaUsb} pçs</b>
+                  </div>
+                </div>
+              </div>
+
+              {err && <ErrorBox message={err} />}
+
+              {/* BOTÃO DE CONFIRMAR PRÉ-MONTAGEM */}
+              <div className="pt-2 flex flex-col sm:flex-row items-center justify-between gap-4">
+                <Button variant="indigo" onClick={() => setStage(1)}>
+                  <ChevronLeft className="h-5 w-5" /> Voltar aos Pallets
+                </Button>
+
+                <Button
+                  variant="success"
+                  loading={busy}
+                  onClick={savePreAssemblyKits}
+                  className="w-full sm:w-auto py-4 px-8 text-base font-bold shadow-xl"
+                >
+                  <Check className="h-5 w-5" />
+                  Salvar Pré-Montagem &amp; Avançar para Resumo (Etapa 3)
+                </Button>
+              </div>
+            </div>
+          ) : (
+            /* MODO MANUAL PEÇA A PEÇA */
+            <div className="space-y-6">
+              <div className="bg-slate-50 border-2 border-slate-200 rounded-3xl p-6 md:p-8 space-y-6">
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+                  <div>
+                    <span className="text-xs font-mono font-semibold text-slate-500">
+                      Item {idx + 1} de {items.length} · {cur?.code}
+                    </span>
+                    <h3 className="text-xl font-bold text-navy-900">{cur?.description}</h3>
+                  </div>
+                  <span className="text-xs text-slate-500 bg-white px-3 py-1 rounded-full border border-slate-200">
+                    Apontamento Individual
+                  </span>
+                </div>
+
+                <div className="flex items-center justify-center gap-2 sm:gap-3 max-w-xl mx-auto">
+                  <button
+                    type="button"
+                    onClick={() => addQuick(-10)}
+                    className="w-12 h-12 rounded-2xl bg-white border-2 border-slate-300 font-bold text-slate-700"
+                  >
+                    -10
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => addQuick(-1)}
+                    className="w-12 h-12 rounded-2xl bg-white border-2 border-slate-300 font-bold text-xl text-slate-700"
+                  >
+                    <Minus className="h-6 w-6" />
+                  </button>
+
+                  <input
+                    type="number"
+                    min={0}
+                    value={preAssemblyVal}
+                    disabled={!can}
+                    onChange={(e) => setPreAssemblyVal(e.target.value)}
+                    className="w-36 h-16 text-center font-mono text-3xl font-extrabold bg-white border-2 border-amber-500 rounded-2xl text-navy-900 shadow-inner"
+                  />
+
+                  <button
+                    type="button"
+                    onClick={() => addQuick(1)}
+                    className="w-12 h-12 rounded-2xl bg-white border-2 border-slate-300 font-bold text-xl text-slate-700"
+                  >
+                    <Plus className="h-6 w-6" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => addQuick(10)}
+                    className="w-12 h-12 rounded-2xl bg-white border-2 border-slate-300 font-bold text-slate-700"
+                  >
+                    +10
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <Button
+                    type="button"
+                    variant="indigo"
+                    disabled={idx === 0 || busy}
+                    onClick={() => setIdx(idx - 1)}
+                  >
+                    <ChevronLeft className="h-5 w-5" /> Item Anterior
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="warning"
+                    disabled={!can || busy}
+                    onClick={handleZeroAndNext}
+                  >
+                    <RotateCcw className="h-5 w-5" /> Manter 0 &amp; Próximo
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="success"
+                    loading={busy}
+                    disabled={!can}
+                    onClick={handleConfirm}
+                  >
+                    <Check className="h-5 w-5" /> Confirmar &amp; Próximo
+                  </Button>
                 </div>
               </div>
             </div>
@@ -665,15 +1235,45 @@ function Count({ inv, reload, can }: { inv: any; reload: () => void; can: boolea
               Conferência final de turno antes da homologação e fechamento.
             </span>
 
-            <Button
-              variant="success"
-              disabled={!allDone || locked}
-              onClick={finish}
-              className="w-full sm:w-auto py-3.5 px-6 text-base font-bold shadow-lg"
-            >
-              <CheckCircle2 className="h-5 w-5" />
-              Validar Contagem &amp; Comparar Turnos
-            </Button>
+            <div className="flex flex-wrap items-center gap-3">
+              {!locked && can && shift === "MANHA" && (
+                <Button
+                  variant="success"
+                  loading={busy}
+                  disabled={!isCurrentShiftComplete}
+                  onClick={finishMorningShift}
+                  className="py-3.5 px-6 text-base font-bold shadow-lg"
+                >
+                  <CheckCircle2 className="h-5 w-5" />
+                  Concluir 1º Turno (Manhã)
+                </Button>
+              )}
+
+              {!locked && can && shift === "MANHA" && (
+                <Button
+                  variant="sky"
+                  loading={busy}
+                  disabled={!isCurrentShiftComplete}
+                  onClick={() => finishComparison(true)}
+                  className="py-3.5 px-4 text-xs font-semibold"
+                >
+                  Finalizar Inventário com Turno Único
+                </Button>
+              )}
+
+              {!locked && can && shift === "NOITE" && (
+                <Button
+                  variant="success"
+                  loading={busy}
+                  disabled={!isCurrentShiftComplete}
+                  onClick={() => finishComparison(false)}
+                  className="py-3.5 px-6 text-base font-bold shadow-lg"
+                >
+                  <CheckCircle2 className="h-5 w-5" />
+                  Concluir Turno da Noite &amp; Comparar
+                </Button>
+              )}
+            </div>
           </div>
         </Card>
       )}

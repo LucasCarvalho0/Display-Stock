@@ -1,5 +1,5 @@
 // DISPLAY STOCK — Service Worker (PWA)
-const CACHE_NAME = 'display-stock-v10';
+const CACHE_NAME = 'display-stock-v11';
 const STATIC_ASSETS = [
   '/',
   '/manifest.json',

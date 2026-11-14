@@ -9,7 +9,7 @@ export const signedQty = (type: MovementType, qty: number) =>
 export const movementNumber = (seq: number) => `MOV-${String(seq).padStart(6, "0")}`;
 
 /** Bloqueia a linha do saldo (SELECT ... FOR UPDATE) e devolve o valor atual. Serializa saídas simultâneas. */
-async function lockBalance(tx: Tx, productId: string): Promise<number> {
+export async function lockBalance(tx: Tx, productId: string): Promise<number> {
   await tx.stockBalance.upsert({ where: { productId }, create: { productId, quantity: 0 }, update: {} });
   const rows = await tx.$queryRaw<{ quantity: number }[]>`SELECT "quantity" FROM "StockBalance" WHERE "productId" = ${productId} FOR UPDATE`;
   return rows[0].quantity;
