@@ -13,9 +13,22 @@ export type Tx = Prisma.TransactionClient;
 export async function transaction<T>(fn: (tx: Tx) => Promise<T>, retries = 3): Promise<T> {
   for (let i = 0; ; i++) {
     try {
-      return await prisma.$transaction(fn, { maxWait: 5000, timeout: 20000 });
-    } catch (e) {
-      if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2034" && i < retries) continue;
+      return await prisma.$transaction(fn, { maxWait: 10000, timeout: 30000 });
+    } catch (e: any) {
+      const isSerializationConflict = e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2034";
+      const isConnectionDrop =
+        e?.message &&
+        (e.message.includes("10054") ||
+          e.message.includes("ConnectionReset") ||
+          e.message.includes("closed") ||
+          e.message.includes("Connection closed") ||
+          e.message.includes("connection reset"));
+
+      if ((isSerializationConflict || isConnectionDrop) && i < retries) {
+        // Backoff exponencial para permitir reconexão do pool
+        await new Promise((resolve) => setTimeout(resolve, 300 * Math.pow(2, i)));
+        continue;
+      }
       throw e;
     }
   }
